@@ -1,0 +1,84 @@
+# .github/workflows/docker.yml
+name: Build & Smoke Docker
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # cần để push GHCR
+    outputs:
+      image: ${{ steps.prep.outputs.image }}
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ↓ tên image lowercase: ghcr.io/<owner>/<repo>
+      - name: Prepare image name (lowercase)
+        id: prep
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set tag
+        id: tag
+        run: echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          docker build \
+            -t "${{ steps.prep.outputs.image }}:${{ steps.tag.outputs.tag }}" \
+            -t "${{ steps.prep.outputs.image }}:latest" .
+
+      - name: Push image
+        run: |
+          docker push "${{ steps.prep.outputs.image }}:${{ steps.tag.outputs.tag }}"
+          docker push "${{ steps.prep.outputs.image }}:latest"
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      packages: read     # cần để pull GHCR
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: docker pull "${{ needs.build.outputs.image }}:${{ needs.build.outputs.tag }}"
+
+      - name: Run container
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          docker run -d --rm --name diabot -p 3000:3000 \
+            -e SUPABASE_URL -e SUPABASE_SERVICE_ROLE \
+            -e NEXT_PUBLIC_SUPABASE_URL -e NEXT_PUBLIC_SUPABASE_ANON_KEY \
+            "${{ needs.build.outputs.image }}:${{ needs.build.outputs.tag }}"
+          # chờ app sẵn sàng (tối đa 60s)
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3000/api/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "App not ready" && exit 1
+
+      - name: Smoke test /api/qa/selftest
+        run: curl -fsS http://localhost:3000/api/qa/selftest

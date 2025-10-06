@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  diabot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: diabot/app:local
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    environment:
+      # Cho phép override nhanh nếu cần
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/qa/selftest"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # (Tùy chọn) Supabase local — để sau, khi cần sẽ bật profile "full"
+  # db:
+  #   image: supabase/postgres:15
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     POSTGRES_PASSWORD: supabase
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+
+# volumes:
+#   db_data:

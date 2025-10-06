@@ -1,0 +1,58 @@
+# Build & cache
+.next/
+.turbo/
+dist/
+build/
+coverage/
+.cache/
+.vercel/
+node_modules/
+.pnpm-store/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs & temp
+*.log
+*.tmp
+*.bak
+.DS_Store
+
+# Media/docs nặng - KHÔNG cho AI index
+assets/_raw/
+public/raw/
+docs/archives/
+data/_raw/
+
+# Test outputs / reports
+reports/
+*.coverage
+
+# Node modules
+node_modules
+
+# Next.js build output
+.next/
+out/
+
+# Build artifacts
+dist/
+.turbo/
+
+# Lock files
+
+pnpm-lock.yaml
+yarn.lock
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local development
+.vscode/
+.idea/
+*.log
+*.tsbuildinfo

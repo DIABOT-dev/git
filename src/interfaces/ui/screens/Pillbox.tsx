@@ -1,0 +1,2 @@
+import Card from '@/interfaces/ui/components/atoms/Card'
+export default function Pillbox(){return <div className='px-4 pb-32'><Card><p className='font-semibold'>Lịch thuốc</p><p className='text-sm text-muted'>Đang cập nhật…</p></Card></div>}

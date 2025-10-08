@@ -1,0 +1,24 @@
+{
+  "name": "DiabotAI",
+  "description": "Agent tích hợp AI (meal suggest demo, export PDF/CSV)",
+  "triggers": [
+    "manual"
+  ],
+  "actions": [
+    {
+      "type": "http_call",
+      "method": "GET",
+      "url": "/api/meal/suggest"
+    },
+    {
+      "type": "http_call",
+      "method": "GET",
+      "url": "/api/export/pdf"
+    },
+    {
+      "type": "http_call",
+      "method": "GET",
+      "url": "/api/export/csv"
+    }
+  ]
+}

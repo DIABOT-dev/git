@@ -1,0 +1,11 @@
+# QA Smoke Checklist (sau deploy)
+- [ ] GET /api/qa/selftest → **200**
+- [ ] HEAD / (chưa login) → **302** /login
+- [ ] GET /auth/login → **200**
+- [ ] GET /api/chart/7d → **200** JSON hợp lệ
+- [ ] POST /api/log/bg → **201**
+- [ ] POST /api/log/water → **201**
+- [ ] POST /api/log/bp → **201**
+- [ ] RLS: user A **không** thấy data user B
+- [ ] Healthcheck ghi log OK/Fail vào `/opt/diabot/health_fail.log`
+- [ ] S3: file backup mới nhất có trong bucket

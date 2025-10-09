@@ -1,7 +1,7 @@
 name: GPT Control CI
 on:
   push:
-    branches: [ "gpt-control" ]
+    branches: [ "gpt-control", "gpt-dev" ]      # ← thêm gpt-dev
   pull_request:
     branches: [ "gpt-control", "main" ]
 jobs:

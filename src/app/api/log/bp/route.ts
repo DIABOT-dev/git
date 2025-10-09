@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const { systolic, diastolic, pulse, taken_at } = parse.data;
     const taken = taken_at ? new Date(taken_at).toISOString() : new Date().toISOString();
 
-    const sb = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
+    const sb = supabaseAdmin; // Gọi supabaseAdmin như một hàm
     const { data, error } = await sb
       .from("bp_logs")
       .insert({ user_id: userId, systolic, diastolic, pulse, taken_at: taken })

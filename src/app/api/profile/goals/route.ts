@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const repo = new ProfileGoalsRepo();
     // Instead of calling repo.saveGoals directly, update the profile's prefs
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('profiles')
       .update({ prefs: { goals: parse.data } }) // Store goals within prefs
       .eq('id', userId)
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     const userId = await requireAuth(req);
 
     // Fetch goals from the profile's prefs
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('profiles')
       .select('prefs')
       .eq('id', userId)

@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    const { data: yesterdayMeals } = await supabaseAdmin()
+    const { data: yesterdayMeals } = await supabaseAdmin
       .from('meal_logs')
       .select('items, carbs_g, protein_g, fat_g, kcal')
       .eq('user_id', userId)

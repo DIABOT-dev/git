@@ -9,14 +9,14 @@ type Reminder = {
 const store = new Map<string, Reminder[]>(); // userId -> reminders
 
 export async function GET() {
-  const supabase = getServerClient();
+  const supabase = getServerClient;
   const { data: { user } } = await supabase.auth.getUser();
   const uid = user?.id ?? 'demo';
   return NextResponse.json({ ok: true, data: store.get(uid) ?? [] });
 }
 
 export async function POST(req: Request) {
-  const supabase = getServerClient();
+  const supabase = getServerClient;
   const { data: { user } } = await supabase.auth.getUser();
   const uid = user?.id ?? 'demo';
   const body = await req.json();

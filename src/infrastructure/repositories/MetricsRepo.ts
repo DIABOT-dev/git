@@ -3,7 +3,7 @@ import { MetricDay, MetricWeek } from "@/domain/types";
 
 export class MetricsRepo {
   async upsertDailyMetric(userId: string, day: string, metric: string, value: any): Promise<MetricDay> {
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('metrics_day')
       .upsert({
         user_id: userId,
@@ -20,7 +20,7 @@ export class MetricsRepo {
   }
 
   async getDailyMetrics(userId: string, fromDay: string, toDay: string, metric: string): Promise<MetricDay[]> {
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('metrics_day')
       .select('*')
       .eq('user_id', userId)
@@ -34,7 +34,7 @@ export class MetricsRepo {
   }
 
   async upsertWeeklyMetric(userId: string, week: number, metric: string, value: any): Promise<MetricWeek> {
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('metrics_week')
       .upsert({
         user_id: userId,
@@ -51,7 +51,7 @@ export class MetricsRepo {
   }
 
   async getWeeklyMetrics(userId: string, fromWeek: number, toWeek: number, metric: string): Promise<MetricWeek[]> {
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('metrics_week')
       .select('*')
       .eq('user_id', userId)

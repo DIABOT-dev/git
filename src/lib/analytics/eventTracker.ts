@@ -37,7 +37,7 @@ export async function trackEvent(params: TrackEventParams): Promise<void> {
   } = params;
 
   try {
-    const { error } = await supabaseAdmin()
+    const { error } = await supabaseAdmin
       .from('analytics_events')
       .insert({
         event_type: eventType,

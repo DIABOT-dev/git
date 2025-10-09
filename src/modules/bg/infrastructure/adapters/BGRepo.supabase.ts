@@ -1,4 +1,3 @@
-import { query } from "@/lib/db";
 import type { BGLogDTO, SaveResult } from "../../domain/types";
 import type { BGRepo } from "../../application/ports/BGRepo";
 
@@ -28,7 +27,7 @@ function getDevUserId(): string | null {
 // tag mapping for legacy schema (glucose_logs.tag)
 const TAG_MAP: Record<BGLogDTO["context"], string> = {
   before: "before_meal",
-  after2h: "after_meal", 
+  after2h: "after_meal",
   random: "random",
 };
 
@@ -43,17 +42,28 @@ export class BGRepoSupabase implements BGRepo {
     const tag = TAG_MAP[dto.context];
 
     try {
-      const result = await query(
-        `INSERT INTO glucose_logs (user_id, value_mgdl, tag, taken_at, created_at)
-         VALUES ($1, $2, $3, $4, NOW())
-         RETURNING id`,
-        [user_id, value_mgdl, tag, dto.taken_at]
-      );
+      // Call API instead of direct DB access (client-safe)
+      const response = await fetch('/api/log/bg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id,
+          value_mgdl,
+          tag,
+          taken_at: dto.taken_at
+        })
+      });
 
-      return { ok: true, status: 201, id: result.rows[0]?.id };
+      if (!response.ok) {
+        const error = await response.json();
+        return { ok: false, status: response.status, error: error.error || 'API error' };
+      }
+
+      const result = await response.json();
+      return { ok: true, status: 201, id: result.id };
     } catch (error: any) {
       console.error('[BGRepo] Save error:', error);
-      return { ok: false, status: 500, error: error.message || 'Database error' };
+      return { ok: false, status: 500, error: error.message || 'Network error' };
     }
   }
 }

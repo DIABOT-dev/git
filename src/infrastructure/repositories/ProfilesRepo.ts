@@ -3,7 +3,7 @@ import { Profile } from "@/domain/types";
 
 export class ProfilesRepo {
   async create(profile: Omit<Profile, 'id' | 'created_at' | 'updated_at'>): Promise<Profile> {
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('profiles')
       .insert(profile)
       .select()
@@ -14,7 +14,7 @@ export class ProfilesRepo {
   }
 
   async getById(id: string): Promise<Profile | null> {
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('profiles')
       .select('*')
       .eq('id', id)
@@ -28,7 +28,7 @@ export class ProfilesRepo {
   }
 
   async update(id: string, updates: Partial<Profile>): Promise<Profile> {
-    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
       .from('profiles')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)

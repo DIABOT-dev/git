@@ -1,50 +1,62 @@
 import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import type { Session, User } from "@supabase/supabase-js";
+
+interface User {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+}
 
 type UseAuthState = {
   user: User | null;
-  session: Session | null;
   loading: boolean;
   error?: string;
 };
 
 export function useAuth(): UseAuthState {
-  const supabase = createClientComponentClient();
   const [state, setState] = useState<UseAuthState>({
     user: null,
-    session: null,
     loading: true,
   });
 
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (!mounted) return;
-      setState({
-        user: data?.session?.user ?? null,
-        session: data?.session ?? null,
-        loading: false,
-        error: error?.message,
-      });
-    });
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!mounted) return;
-      setState({
-        user: session?.user ?? null,
-        session: session ?? null,
-        loading: false,
-        error: undefined,
-      });
-    });
+        if (!mounted) return;
+
+        if (response.ok) {
+          const data = await response.json();
+          setState({
+            user: data.user,
+            loading: false,
+          });
+        } else {
+          setState({
+            user: null,
+            loading: false,
+          });
+        }
+      } catch (error) {
+        if (!mounted) return;
+        setState({
+          user: null,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Authentication check failed',
+        });
+      }
+    }
+
+    checkAuth();
 
     return () => {
       mounted = false;
-      sub?.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   return state;
 }

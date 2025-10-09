@@ -19,6 +19,9 @@ node_modules/
 *.bak
 .DS_Store
 
+# Local database volume
+data/
+
 # Media/docs nặng - KHÔNG cho AI index
 assets/_raw/
 public/raw/

@@ -52,3 +52,6 @@
 1. Cần chạy lại probe với URL DIA BRAIN thực tế sau khi có thông tin chính thức.
 2. Giữ cảnh báo trùng khoá trong `tsconfig.json` để xử lý ở lượt cấu hình kế tiếp (không ảnh hưởng build hiện tại).
 3. Theo dõi kết quả QA sau khi CI tích hợp probe live (khi endpoints sẵn sàng).
+
+## Publication status
+- Đã cấu hình remote `origin` trỏ tới GitHub (`DIABOT-dev/git`) và push nhánh `work` thành công để chuẩn bị mở PR.

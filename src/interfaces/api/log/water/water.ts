@@ -12,7 +12,7 @@ export async function handlePost(req: Request) {
   const body = await req.json();
   const input = WaterInput.parse(body);
 
-  const sb = supabaseAdmin;
+  const sb = supabaseAdmin();
   const { data, error } = await sb
     .from("water_logs")
     .insert({

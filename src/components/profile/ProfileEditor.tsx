@@ -2,7 +2,14 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { mergeConditions, toGoalsPayload, toPersonalityPayload, Goals, PersonaPrefs } from '@/lib/profile/mappers';
+import {
+  mergeConditions,
+  toGoalsPayload,
+  toPersonalityPayload,
+  Goals,
+  PersonaPrefs,
+  HealthConditions,
+} from '@/lib/profile/mappers';
 
 type Conditions = {
   diabetes?: boolean;
@@ -11,6 +18,8 @@ type Conditions = {
   obesity?: boolean;
   other?: string;
 };
+
+type ProfilePreferences = PersonaPrefs & { goals?: Goals };
 
 type Profile = {
   id: string;
@@ -21,13 +30,30 @@ type Profile = {
   waist_cm?: number | null;
   goal?: string | null;
   conditions?: Conditions | null;
-  prefs?: { goals?: Goals } & PersonaPrefs | null;
+  prefs?: ProfilePreferences | null;
 };
 
 type Props = {
   profile: Profile;      // cần để có id gọi PUT /api/profile/[id]
   onSaved?: (p: Partial<Profile>) => void;
 };
+
+interface ProfileBasicsPayload {
+  dob: string | null;
+  sex: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  waist_cm: number | null;
+  goal: string | null;
+  conditions: HealthConditions;
+}
+
+const conditionKeys: Array<{ key: keyof Omit<Conditions, 'other'>; label: string }> = [
+  { key: 'diabetes', label: 'Tiểu đường' },
+  { key: 'hypertension', label: 'Huyết áp cao' },
+  { key: 'gout', label: 'Gout' },
+  { key: 'obesity', label: 'Béo phì' },
+];
 
 export default function ProfileEditor({ profile, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
@@ -48,18 +74,21 @@ export default function ProfileEditor({ profile, onSaved }: Props) {
     low_ask_mode: profile.prefs?.low_ask_mode,
   });
 
-  const profilePayload = useMemo(() => {
-    const basic: any = {
+  const mergedConditions = useMemo<HealthConditions>(() => {
+    return mergeConditions(profile.conditions ?? {}, conditions);
+  }, [conditions, profile.conditions]);
+
+  const profilePayload = useMemo<ProfileBasicsPayload>(() => {
+    return {
       dob: dob || null,
       sex: sex || null,
       height_cm: typeof height === 'number' ? height : null,
       weight_kg: typeof weight === 'number' ? weight : null,
       waist_cm: typeof waist === 'number' ? waist : null,
       goal: goal || null,
+      conditions: mergedConditions,
     };
-    basic.conditions = mergeConditions(profile.conditions ?? {}, conditions);
-    return basic;
-  }, [dob, sex, height, weight, waist, goal, conditions, profile.conditions]);
+  }, [dob, sex, height, weight, waist, goal, mergedConditions]);
 
   async function saveBasic() {
     setSaving(true);
@@ -85,7 +114,11 @@ export default function ProfileEditor({ profile, onSaved }: Props) {
         body: JSON.stringify(toGoalsPayload(goals)),
       });
       if (!res.ok) throw new Error(await res.text());
-      onSaved?.({ prefs: { ...profile.prefs, goals } as any });
+      const nextPrefs: Profile['prefs'] = {
+        ...(profile.prefs ?? {}),
+        goals,
+      };
+      onSaved?.({ prefs: nextPrefs });
     } finally {
       setSaving(false);
     }
@@ -100,10 +133,30 @@ export default function ProfileEditor({ profile, onSaved }: Props) {
         body: JSON.stringify(toPersonalityPayload(prefs)),
       });
       if (!res.ok) throw new Error(await res.text());
-      onSaved?.({ prefs: { ...profile.prefs, ...prefs } as any });
+      const nextPrefs: Profile['prefs'] = {
+        ...(profile.prefs ?? {}),
+        ...prefs,
+      };
+      onSaved?.({ prefs: nextPrefs });
     } finally {
       setSaving(false);
     }
+  }
+
+  const handlePersonaSelect = (value: string) => {
+    const persona: PersonaPrefs['ai_persona'] | undefined =
+      value === '' ? undefined : (value as PersonaPrefs['ai_persona']);
+    setPrefs((current) => ({ ...current, ai_persona: persona }));
+  };
+
+  const handleGuidanceSelect = (value: string) => {
+    const guidance: PersonaPrefs['guidance_level'] | undefined =
+      value === '' ? undefined : (value as PersonaPrefs['guidance_level']);
+    setPrefs((current) => ({ ...current, guidance_level: guidance }));
+  };
+
+  function toggleCondition(key: keyof Omit<Conditions, 'other'>, value: boolean) {
+    setConditions((current) => ({ ...current, [key]: value }));
   }
 
   return (
@@ -148,16 +201,11 @@ export default function ProfileEditor({ profile, onSaved }: Props) {
 
         {/* Conditions */}
         <div className="mt-4 grid grid-cols-2 gap-3">
-          {[
-            ['diabetes', 'Tiểu đường'],
-            ['hypertension', 'Huyết áp cao'],
-            ['gout', 'Gout'],
-            ['obesity', 'Béo phì'],
-          ].map(([key, label]) => (
+          {conditionKeys.map(({ key, label }) => (
             <label key={key} className="inline-flex items-center gap-2 text-sm">
               <input type="checkbox"
-                checked={Boolean((conditions as any)[key])}
-                onChange={e => setConditions({ ...conditions, [key]: e.target.checked })} />
+                checked={Boolean(conditions[key])}
+                onChange={e => toggleCondition(key, e.target.checked)} />
               {label}
             </label>
           ))}
@@ -210,7 +258,7 @@ export default function ProfileEditor({ profile, onSaved }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm">Phong cách AI
             <select className="mt-1 w-full rounded border p-2"
-              value={prefs.ai_persona ?? ''} onChange={e => setPrefs({ ...prefs, ai_persona: e.target.value as any })}>
+              value={prefs.ai_persona ?? ''} onChange={e => handlePersonaSelect(e.target.value)}>
               <option value="">—</option>
               <option value="friend">Friend</option>
               <option value="coach">Coach</option>
@@ -219,7 +267,7 @@ export default function ProfileEditor({ profile, onSaved }: Props) {
           </label>
           <label className="text-sm">Mức độ hướng dẫn
             <select className="mt-1 w-full rounded border p-2"
-              value={prefs.guidance_level ?? ''} onChange={e => setPrefs({ ...prefs, guidance_level: e.target.value as any })}>
+              value={prefs.guidance_level ?? ''} onChange={e => handleGuidanceSelect(e.target.value)}>
               <option value="">—</option>
               <option value="minimal">Tối giản</option>
               <option value="detailed">Chi tiết</option>

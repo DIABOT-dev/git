@@ -162,3 +162,17 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat qa_checklist.log >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+  quality-gate:
+    name: Quality Gate — No Bolt/Supabase remnants
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: No-Bolt static scan
+        run: node scripts/qa_no_bolt.mjs

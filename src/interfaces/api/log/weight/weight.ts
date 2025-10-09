@@ -12,7 +12,7 @@ export async function handlePost(req: Request) {
   const body = await req.json();
   const input = WeightInput.parse(body);
 
-  const sb = supabaseAdmin;
+  const sb = supabaseAdmin();
   const { data, error } = await sb
     .from("weight_logs")
     .insert({

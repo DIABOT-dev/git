@@ -13,7 +13,7 @@ export async function handlePost(req: Request) {
   const body = await req.json();
   const input = InsulinInput.parse(body);
 
-  const sb = supabaseAdmin;
+  const sb = supabaseAdmin();
   const { data, error } = await sb
     .from("insulin_logs")
     .insert({

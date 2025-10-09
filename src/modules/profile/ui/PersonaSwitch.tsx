@@ -4,15 +4,7 @@ import { useState, useEffect } from 'react';
 import Button from '@/interfaces/ui/components/atoms/Button';
 import Toast from '@/interfaces/ui/components/atoms/Toast';
 import { cn } from '@/lib/utils';
-
-type PersonaType = 'friend' | 'coach' | 'advisor';
-type GuidanceLevel = 'minimal' | 'detailed';
-
-interface PersonaPrefs {
-  ai_persona: PersonaType;
-  guidance_level: GuidanceLevel;
-  low_ask_mode: boolean;
-}
+import { PersonaPrefs } from '@/lib/profile/mappers';
 
 interface PersonaSwitchProps {
   userId: string;
@@ -29,7 +21,7 @@ export default function PersonaSwitch({ userId, className }: PersonaSwitchProps)
   const [prefs, setPrefs] = useState<PersonaPrefs>({
     ai_persona: 'friend',
     guidance_level: 'minimal',
-    low_ask_mode: false
+    low_ask_mode: false,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,10 +44,14 @@ export default function PersonaSwitch({ userId, className }: PersonaSwitchProps)
         throw new Error('Failed to fetch preferences');
       }
 
-      const data = await response.json();
-      setPrefs(data.prefs);
-    } catch (err: any) {
-      console.error('Error fetching prefs:', err);
+      const data = (await response.json()) as { prefs: PersonaPrefs };
+      setPrefs({
+        ai_persona: data.prefs.ai_persona ?? 'friend',
+        guidance_level: data.prefs.guidance_level ?? 'minimal',
+        low_ask_mode: data.prefs.low_ask_mode ?? false,
+      });
+    } catch (error) {
+      console.error('Error fetching prefs:', error);
       setToast({ message: 'Không thể tải cài đặt', type: 'error' });
     } finally {
       setLoading(false);
@@ -79,31 +75,35 @@ export default function PersonaSwitch({ userId, className }: PersonaSwitchProps)
         throw new Error('Failed to save preferences');
       }
 
-      const data = await response.json();
-      setPrefs(data.prefs);
+      const data = (await response.json()) as { prefs: PersonaPrefs };
+      setPrefs({
+        ai_persona: data.prefs.ai_persona ?? 'friend',
+        guidance_level: data.prefs.guidance_level ?? 'minimal',
+        low_ask_mode: data.prefs.low_ask_mode ?? false,
+      });
       setToast({ message: 'Đã lưu thay đổi', type: 'success' });
-    } catch (err: any) {
-      console.error('Error saving prefs:', err);
+    } catch (error) {
+      console.error('Error saving prefs:', error);
       setToast({ message: 'Không thể lưu thay đổi', type: 'error' });
     } finally {
       setSaving(false);
     }
   }
 
-  function handlePersonaChange(persona: PersonaType) {
-    setPrefs({ ...prefs, ai_persona: persona });
-    savePrefs({ ai_persona: persona });
+  function handlePersonaChange(persona: NonNullable<PersonaPrefs['ai_persona']>) {
+    setPrefs((current) => ({ ...current, ai_persona: persona }));
+    void savePrefs({ ai_persona: persona });
   }
 
-  function handleGuidanceLevelChange(level: GuidanceLevel) {
-    setPrefs({ ...prefs, guidance_level: level });
-    savePrefs({ guidance_level: level });
+  function handleGuidanceLevelChange(level: NonNullable<PersonaPrefs['guidance_level']>) {
+    setPrefs((current) => ({ ...current, guidance_level: level }));
+    void savePrefs({ guidance_level: level });
   }
 
   function handleLowAskModeToggle() {
     const newValue = !prefs.low_ask_mode;
-    setPrefs({ ...prefs, low_ask_mode: newValue });
-    savePrefs({ low_ask_mode: newValue });
+    setPrefs((current) => ({ ...current, low_ask_mode: newValue }));
+    void savePrefs({ low_ask_mode: newValue });
   }
 
   if (loading) {

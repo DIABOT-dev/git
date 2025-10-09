@@ -4,7 +4,7 @@ import { BloodGlucose } from "@/domain/entities/BloodGlucose";
 
 export class SupabaseBloodGlucoseRepository implements BloodGlucoseRepository {
   async create(entry: BloodGlucose): Promise<BloodGlucose> {
-    const supabase = supabaseAdmin;
+    const supabase = supabaseAdmin();
     const { data, error } = await supabase.from("bg_logs").insert({
       user_id: entry.userId,
       mgdl: entry.mgdl,

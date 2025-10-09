@@ -13,7 +13,7 @@ export async function handlePost(req: Request) {
   const start = new Date(`${targetDay}T00:00:00.000Z`).toISOString();
   const end   = new Date(`${targetDay}T23:59:59.999Z`).toISOString();
 
-  const sb = sbAdmin();
+  const sb = sbAdmin;
 
   const [bg, meals, water, weight, bp, insulin] = await Promise.all([
     sb.from("glucose_logs").select("mgdl").gte("at", start).lte("at", end).eq("user_id", userId),
@@ -24,15 +24,43 @@ export async function handlePost(req: Request) {
     sb.from("insulin_logs").select("units").gte("at", start).lte("at", end).eq("user_id", userId),
   ]);
 
-  const avg = (arr: number[]) => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+  const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
 
-  const avg_glucose  = bg.data ? avg(bg.data.map((x:any)=>x.mgdl)) : null;
-  const count_meals  = meals.data?.length ?? 0;
-  const water_ml     = water.data?.reduce((s:number,x:any)=>s+(x.ml||0),0) ?? 0;
-  const last_weight_kg = weight.data?.[0]?.kg ?? null;
-  const avg_systolic = bp.data ? avg(bp.data.map((x:any)=>x.systolic)) : null;
-  const avg_diastolic= bp.data ? avg(bp.data.map((x:any)=>x.diastolic)) : null;
-  const insulin_units= insulin.data?.reduce((s:number,x:any)=>s+(Number(x.units)||0),0) ?? 0;
+  const bgRows = ((bg.data ?? []) as Array<{ mgdl: number | null }>);
+  const bgValues = bgRows
+    .map((row) => (typeof row.mgdl === "number" ? row.mgdl : null))
+    .filter((value): value is number => value !== null);
+  const avg_glucose = avg(bgValues);
+
+  const count_meals = meals.data?.length ?? 0;
+
+  const waterRows = ((water.data ?? []) as Array<{ ml: number | null }>);
+  const water_ml = waterRows.reduce((sum, row) => sum + (typeof row.ml === "number" ? row.ml : 0), 0);
+
+  const weightRows = ((weight.data ?? []) as Array<{ kg: number | null }>);
+  const last_weight_kg = weightRows.length ? weightRows[0]?.kg ?? null : null;
+
+  const bpRows = ((bp.data ?? []) as Array<{ systolic: number | null; diastolic: number | null }>);
+  const systolicValues = bpRows
+    .map((row) => (typeof row.systolic === "number" ? row.systolic : null))
+    .filter((value): value is number => value !== null);
+  const diastolicValues = bpRows
+    .map((row) => (typeof row.diastolic === "number" ? row.diastolic : null))
+    .filter((value): value is number => value !== null);
+  const avg_systolic = avg(systolicValues);
+  const avg_diastolic = avg(diastolicValues);
+
+  const insulinRows = ((insulin.data ?? []) as Array<{ units: number | string | null }>);
+  const insulin_units = insulinRows.reduce((sum, row) => {
+    if (typeof row.units === "number" && Number.isFinite(row.units)) {
+      return sum + row.units;
+    }
+    if (typeof row.units === "string") {
+      const parsed = Number(row.units);
+      return Number.isFinite(parsed) ? sum + parsed : sum;
+    }
+    return sum;
+  }, 0);
 
   const { error } = await sb.from("metrics_day").upsert({
     user_id: userId,

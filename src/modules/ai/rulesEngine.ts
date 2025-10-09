@@ -7,6 +7,7 @@ export interface MealData {
   protein_g?: number;
   fat_g?: number;
   meal_type?: string;
+  cooking_method?: string;
   items?: Array<{ name?: string; food?: string }>;
 }
 

@@ -4,7 +4,7 @@ import { Meal } from "@/domain/entities/Meal";
 
 export class SupabaseMealRepository implements MealRepository {
   async create(entry: Meal): Promise<Meal> {
-    const supabase = supabaseAdmin;
+    const supabase = supabaseAdmin();
     const { data, error } = await supabase.from("meal_logs").insert({
       user_id: entry.userId,
       meal_type: entry.mealType,

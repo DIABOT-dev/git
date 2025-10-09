@@ -56,3 +56,8 @@ yarn-error.log*
 .idea/
 *.log
 *.tsbuildinfo
+
+# Archive scratch (keep archived sources tracked, ignore incidental build outputs)
+archive/bolt_legacy/**/tmp/
+archive/bolt_legacy/**/scratch/
+archive/bolt_legacy/**/dist/

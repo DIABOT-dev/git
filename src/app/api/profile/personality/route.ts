@@ -72,20 +72,23 @@ export async function PUT(request: NextRequest) {
     };
 
     // Update profile
-    const updatedProfile = await profilesRepo.update(userId, {
-      prefs: newPrefs as any
+    const storedPrefs: Record<string, unknown> = { ...newPrefs };
+    await profilesRepo.update(userId, {
+      prefs: storedPrefs
     });
 
     // Track preference changes
-    for (const [key, value] of Object.entries(updates)) {
-      if (value !== undefined && value !== (currentPrefs as any)[key]) {
+    (Object.keys(updates) as Array<keyof PersonaPrefs>).forEach((key) => {
+      const value = updates[key];
+      const previous = currentPrefs[key];
+      if (value !== undefined && value !== previous) {
         trackPreferenceChanged(userId, requestId, {
           preference_key: key,
-          old_value: (currentPrefs as any)[key],
+          old_value: previous,
           new_value: value
         }).catch(err => console.error('Failed to track preference change:', err));
       }
-    }
+    });
 
     // Console log for monitoring
     console.info({
@@ -105,12 +108,12 @@ export async function PUT(request: NextRequest) {
       }
     });
 
-  } catch (err: any) {
-    console.error('Error in /api/profile/personality:', err);
+  } catch (error) {
+    console.error('Error in /api/profile/personality:', error);
 
     return NextResponse.json({
       error: 'Failed to update preferences',
-      message: err.message
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }
@@ -142,12 +145,12 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (err: any) {
-    console.error('Error in GET /api/profile/personality:', err);
+  } catch (error) {
+    console.error('Error in GET /api/profile/personality:', error);
 
     return NextResponse.json({
       error: 'Failed to get preferences',
-      message: err.message
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import React from 'react';
 import FieldRow from '@/components/ui/FieldRow';
 import SummaryCard from './sections/SummaryCard';
 import { D, formatDateDDMMYYYY, boolToYesNo } from '@/lib/profile/formatters';
+import { Goals, PersonaPrefs } from '@/lib/profile/mappers';
 
 type Conditions = {
   diabetes?: boolean;
@@ -12,20 +13,6 @@ type Conditions = {
   gout?: boolean;
   obesity?: boolean;
   other?: string;
-};
-
-type Goals = {
-  primaryGoal?: string;
-  targetWeight?: number;
-  targetHbA1c?: number;
-  dailySteps?: number;
-  waterCups?: number;
-};
-
-type PersonaPrefs = {
-  ai_persona?: 'friend' | 'coach' | 'advisor';
-  guidance_level?: 'minimal' | 'detailed';
-  low_ask_mode?: boolean;
 };
 
 type Profile = {
@@ -42,20 +29,23 @@ type Profile = {
 
 type Props = {
   profile: Profile;
-  goals?: Goals | null;        // optional override if đã fetch riêng
+  goals?: Goals | null;        // optional override nếu đã fetch riêng
   prefs?: PersonaPrefs | null;  // optional override
 };
 
 export default function ProfileViewer({ profile, goals, prefs }: Props) {
-  const c = (profile.conditions ?? {}) as Conditions;
-  const g = (goals ?? profile.prefs?.goals ?? {}) as Goals;
-  const p = (prefs ?? profile.prefs ?? {}) as PersonaPrefs;
+  const resolvedConditions: Conditions = { ...(profile.conditions ?? {}) };
+  const resolvedGoals: Goals = { ...(goals ?? profile.prefs?.goals ?? {}) };
+  const resolvedPrefs: PersonaPrefs = {
+    ...(profile.prefs ?? {}),
+    ...(prefs ?? {}),
+  };
 
   return (
     <section className="space-y-4">
       <SummaryCard
         sex={profile.sex}
-        goal={profile.goal ?? g?.primaryGoal}
+        goal={profile.goal ?? resolvedGoals?.primaryGoal}
         dob={profile.dob}
         height_cm={profile.height_cm}
         weight_kg={profile.weight_kg}
@@ -73,29 +63,38 @@ export default function ProfileViewer({ profile, goals, prefs }: Props) {
       {/* Tình trạng sức khỏe */}
       <div className="rounded-2xl border p-4 bg-white shadow-sm">
         <h3 className="font-semibold mb-2">Tình trạng sức khỏe</h3>
-        <FieldRow label="Tiểu đường" value={D(boolToYesNo(c.diabetes))} />
-        <FieldRow label="Huyết áp cao" value={D(boolToYesNo(c.hypertension))} />
-        <FieldRow label="Gout" value={D(boolToYesNo(c.gout))} />
-        <FieldRow label="Béo phì" value={D(boolToYesNo(c.obesity))} />
-        <FieldRow label="Khác" value={D(c.other)} />
+        <FieldRow label="Tiểu đường" value={D(boolToYesNo(resolvedConditions.diabetes))} />
+        <FieldRow label="Huyết áp cao" value={D(boolToYesNo(resolvedConditions.hypertension))} />
+        <FieldRow label="Gout" value={D(boolToYesNo(resolvedConditions.gout))} />
+        <FieldRow label="Béo phì" value={D(boolToYesNo(resolvedConditions.obesity))} />
+        <FieldRow label="Khác" value={D(resolvedConditions.other)} />
       </div>
 
       {/* Mục tiêu */}
       <div className="rounded-2xl border p-4 bg-white shadow-sm">
         <h3 className="font-semibold mb-2">Mục tiêu</h3>
-        <FieldRow label="Mục tiêu chính" value={D(g.primaryGoal)} />
-        <FieldRow label="Cân nặng mục tiêu (kg)" value={D(g.targetWeight)} />
-        <FieldRow label="HbA1c mục tiêu (%)" value={D(g.targetHbA1c)} />
-        <FieldRow label="Bước chân/ngày" value={D(g.dailySteps)} />
-        <FieldRow label="Nước/ngày (cốc)" value={D(g.waterCups)} />
+        <FieldRow label="Mục tiêu chính" value={D(resolvedGoals.primaryGoal)} />
+        <FieldRow label="Cân nặng mục tiêu (kg)" value={D(resolvedGoals.targetWeight)} />
+        <FieldRow label="HbA1c mục tiêu (%)" value={D(resolvedGoals.targetHbA1c)} />
+        <FieldRow label="Bước chân/ngày" value={D(resolvedGoals.dailySteps)} />
+        <FieldRow label="Nước/ngày (cốc)" value={D(resolvedGoals.waterCups)} />
       </div>
 
       {/* Tuỳ chọn AI */}
       <div className="rounded-2xl border p-4 bg-white shadow-sm">
         <h3 className="font-semibold mb-2">Trợ lý AI</h3>
-        <FieldRow label="Phong cách AI" value={D(p.ai_persona)} />
-        <FieldRow label="Mức độ hướng dẫn" value={D(p.guidance_level)} />
-        <FieldRow label="Chế độ hỏi ít" value={D(typeof p.low_ask_mode === 'boolean' ? (p.low_ask_mode ? 'Bật' : 'Tắt') : '—')} />
+        <FieldRow label="Phong cách AI" value={D(resolvedPrefs.ai_persona)} />
+        <FieldRow label="Mức độ hướng dẫn" value={D(resolvedPrefs.guidance_level)} />
+        <FieldRow
+          label="Chế độ hỏi ít"
+          value={D(
+            typeof resolvedPrefs.low_ask_mode === 'boolean'
+              ? resolvedPrefs.low_ask_mode
+                ? 'Bật'
+                : 'Tắt'
+              : '—'
+          )}
+        />
       </div>
     </section>
   );

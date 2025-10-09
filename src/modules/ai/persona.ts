@@ -140,22 +140,27 @@ export function getDefaultPersonaPrefs(): PersonaPrefs {
  * Safely extract persona prefs from profile.prefs JSONB
  * Handles missing/malformed prefs with defaults
  */
-export function extractPersonaPrefs(prefs: any): PersonaPrefs {
+export function extractPersonaPrefs(prefs: unknown): PersonaPrefs {
   if (!prefs || typeof prefs !== 'object') {
     return getDefaultPersonaPrefs();
   }
 
   const defaults = getDefaultPersonaPrefs();
+  const value = prefs as Partial<Record<keyof PersonaPrefs, unknown>>;
+
+  const aiPersona = value.ai_persona;
+  const guidanceLevel = value.guidance_level;
+  const lowAskMode = value.low_ask_mode;
 
   return {
-    ai_persona: ['friend', 'coach', 'advisor'].includes(prefs.ai_persona)
-      ? prefs.ai_persona
-      : defaults.ai_persona,
-    guidance_level: ['minimal', 'detailed'].includes(prefs.guidance_level)
-      ? prefs.guidance_level
-      : defaults.guidance_level,
-    low_ask_mode: typeof prefs.low_ask_mode === 'boolean'
-      ? prefs.low_ask_mode
-      : defaults.low_ask_mode
+    ai_persona:
+      aiPersona === 'friend' || aiPersona === 'coach' || aiPersona === 'advisor'
+        ? aiPersona
+        : defaults.ai_persona,
+    guidance_level:
+      guidanceLevel === 'minimal' || guidanceLevel === 'detailed'
+        ? guidanceLevel
+        : defaults.guidance_level,
+    low_ask_mode: typeof lowAskMode === 'boolean' ? lowAskMode : defaults.low_ask_mode
   };
 }

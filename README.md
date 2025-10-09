@@ -25,7 +25,7 @@ git reset --hard v4-ui-pass-2025-09-12 && git clean -fd && npm ci
 
 ## 🚀 Quick Start
 
-1) `cp .env.local.example .env.local` và điền URL/ANON.
+1) `cp .env.example .env.local` và cập nhật thông số cần thiết.
 2) `npm i`
 3) `npm run dev`
 4) Test API:
@@ -35,7 +35,23 @@ git reset --hard v4-ui-pass-2025-09-12 && git clean -fd && npm ci
    - `POST /api/log/insulin`
 5) ETL (stub): `npm run etl:daily`, `npm run etl:weekly`
 
-Lưu ý: sửa tên bảng/columns tại lớp `src/infra/repositories/*` để khớp schema Supabase hiện có.
+Lưu ý: sửa tên bảng/columns tại lớp `src/infra/repositories/*` để khớp schema Postgres (Viettel) hiện có.
+
+## 🗃️ Postgres (Viettel)
+
+Service Postgres nội bộ chạy cùng Docker Compose:
+
+```bash
+docker compose up -d db
+```
+
+Áp dụng lần lượt các migration khi đã có nội dung:
+
+```bash
+docker compose exec db psql -U postgres -d diabot -f migrations/000_init.sql
+docker compose exec db psql -U postgres -d diabot -f migrations/010_rls.sql
+docker compose exec db psql -U postgres -d diabot -f migrations/020_seed_minimal.sql
+```
 
 ## 🧪 QA Testing
 
@@ -129,7 +145,7 @@ Use `getFeatureFlag('FLAG_NAME')` or `isFeatureEnabled('FLAG_NAME')` to check fl
 - ✅ **Unauth Protection:** All 8 endpoints return 401
 - ✅ **Auth Logic:** DEV mode headers processed correctly  
 - ✅ **API Architecture:** All endpoints accessible and functional
-- ✅ **Database Schema:** Verified with real Supabase connection
+- ✅ **Database Schema:** Verified với Postgres (Viettel)
 - ✅ **Profile Management:** User profile exists and accessible
 
 **Recommendation:** ✅ **PROCEED TO UI DEVELOPMENT PHASE**

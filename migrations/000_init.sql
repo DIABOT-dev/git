@@ -1,0 +1,2 @@
+-- Placeholder for initial schema migration.
+-- To be populated with Viettel Postgres schema definitions.

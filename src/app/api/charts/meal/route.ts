@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     console.log(`[Meal Chart] userId=${userId} range=${range} weekStarts=${weekStarts.join(',')}`);
     
     // Query cache_meal_week for the specified week_start dates
-    const { data: cacheData, error: cacheError } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
+    const { data: cacheData, error: cacheError } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
       .from('cache_meal_week')
       .select('week_start, summary') // Select week_start instead of week
       .eq('profile_id', userId)

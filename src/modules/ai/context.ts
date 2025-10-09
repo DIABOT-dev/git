@@ -35,7 +35,7 @@ export async function buildContext(userId: string): Promise<AIContext> {
     // Đọc song song tất cả logs 7 ngày
     const [glucoseData, waterData, weightData, bpData, insulinData] = await Promise.all([
       // Glucose logs - map cột chuẩn
-      supabaseAdmin // Gọi supabaseAdmin như một hàm
+      supabaseAdmin() // Gọi supabaseAdmin như một hàm
         .from('glucose_logs')
         .select('value_mgdl, taken_at')
         .eq('user_id', userId)
@@ -43,7 +43,7 @@ export async function buildContext(userId: string): Promise<AIContext> {
         .order('taken_at', { ascending: false }),
 
       // Water logs - map cột chuẩn  
-      supabaseAdmin // Gọi supabaseAdmin như một hàm
+      supabaseAdmin() // Gọi supabaseAdmin như một hàm
         .from('water_logs')
         .select('amount_ml, taken_at')
         .eq('user_id', userId)
@@ -51,7 +51,7 @@ export async function buildContext(userId: string): Promise<AIContext> {
         .order('taken_at', { ascending: false }),
 
       // Weight logs - map cột chuẩn
-      supabaseAdmin // Gọi supabaseAdmin như một hàm
+      supabaseAdmin() // Gọi supabaseAdmin như một hàm
         .from('weight_logs')
         .select('weight_kg, taken_at')
         .eq('user_id', userId)
@@ -59,7 +59,7 @@ export async function buildContext(userId: string): Promise<AIContext> {
         .order('taken_at', { ascending: false }),
 
       // BP logs - map cột chuẩn
-      supabaseAdmin // Gọi supabaseAdmin như một hàm
+      supabaseAdmin() // Gọi supabaseAdmin như một hàm
         .from('bp_logs')
         .select('systolic, diastolic, taken_at')
         .eq('user_id', userId)
@@ -67,7 +67,7 @@ export async function buildContext(userId: string): Promise<AIContext> {
         .order('taken_at', { ascending: false }),
 
       // Insulin logs - map cột chuẩn
-      supabaseAdmin // Gọi supabaseAdmin như một hàm
+      supabaseAdmin() // Gọi supabaseAdmin như một hàm
         .from('insulin_logs')
         .select('dose_units, taken_at')
         .eq('user_id', userId)
@@ -196,11 +196,11 @@ export async function buildCompressedContext(userId: string): Promise<Compressed
   try {
     // Fetch all relevant logs for the last 7 days
     const [glucoseRes, waterRes, weightRes, bpRes, mealRes] = await Promise.all([
-      supabaseAdmin.from('glucose_logs').select('value_mgdl, taken_at').eq('user_id', userId).gte('taken_at', sevenDaysAgo.toISOString()).order('taken_at', { ascending: false }),
-      supabaseAdmin.from('water_logs').select('amount_ml, taken_at').eq('user_id', userId).gte('taken_at', sevenDaysAgo.toISOString()).order('taken_at', { ascending: false }),
-      supabaseAdmin.from('weight_logs').select('weight_kg, taken_at').eq('user_id', userId).gte('taken_at', sevenDaysAgo.toISOString()).order('taken_at', { ascending: false }),
-      supabaseAdmin.from('bp_logs').select('systolic, diastolic, taken_at').eq('user_id', userId).gte('taken_at', sevenDaysAgo.toISOString()).order('taken_at', { ascending: false }),
-      supabaseAdmin.from('meal_logs').select('items, taken_at').eq('user_id', userId).order('taken_at', { ascending: false }).limit(1)
+      supabaseAdmin().from('glucose_logs').select('value_mgdl, taken_at').eq('user_id', userId).gte('taken_at', sevenDaysAgo.toISOString()).order('taken_at', { ascending: false }),
+      supabaseAdmin().from('water_logs').select('amount_ml, taken_at').eq('user_id', userId).gte('taken_at', sevenDaysAgo.toISOString()).order('taken_at', { ascending: false }),
+      supabaseAdmin().from('weight_logs').select('weight_kg, taken_at').eq('user_id', userId).gte('taken_at', sevenDaysAgo.toISOString()).order('taken_at', { ascending: false }),
+      supabaseAdmin().from('bp_logs').select('systolic, diastolic, taken_at').eq('user_id', userId).gte('taken_at', sevenDaysAgo.toISOString()).order('taken_at', { ascending: false }),
+      supabaseAdmin().from('meal_logs').select('items, taken_at').eq('user_id', userId).order('taken_at', { ascending: false }).limit(1)
     ]);
 
     // Glucose - compressed

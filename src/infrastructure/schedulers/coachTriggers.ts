@@ -7,7 +7,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin"; // Đã sửa import
  * - Weight 7d lệch > ngưỡng (mặc định 1.5kg) → push
  */
 export async function runCoachTriggers(user_id: string, opts?: { waterTarget?: number; weightDelta?: number }) {
-  const supa = supabaseAdmin; // Gọi supabaseAdmin như một hàm
+  const supa = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
   const waterTarget = opts?.waterTarget ?? 1500;
   const weightDelta = opts?.weightDelta ?? 1.5;
 

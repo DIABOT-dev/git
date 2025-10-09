@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const dailyFeatures = await featureRepo.getFeaturesWithFallback(userId);
 
     // Get latest BG
-    const { data: bgData } = await supabaseAdmin
+    const { data: bgData } = await supabaseAdmin()
       .from('glucose_logs')
       .select('value_mgdl')
       .eq('user_id', userId)

@@ -14,7 +14,7 @@ function toCSV(rows: Record<string, any>[]) {
 export async function GET(req: NextRequest) {
   try {
     const uid = await requireAuth(req);
-    const sb = supabaseAdmin;
+    const sb = supabaseAdmin();
 
     // Get date range (last 7 days)
     const endDate = new Date();

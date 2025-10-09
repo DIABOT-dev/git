@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch meal data from DB if meal_log_id provided
     if (meal_log_id) {
-      const { data: mealLog } = await supabaseAdmin
+      const { data: mealLog } = await supabaseAdmin()
         .from('meal_logs')
         .select('items, carbs_g, protein_g, fat_g, kcal, meal_type, cooking_method')
         .eq('id', meal_log_id)
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     const dailyFeatures = await featureRepo.getFeaturesWithFallback(userId);
 
     // Get latest BG
-    const { data: bgData } = await supabaseAdmin
+    const { data: bgData } = await supabaseAdmin()
       .from('glucose_logs')
       .select('value_mgdl')
       .eq('user_id', userId)

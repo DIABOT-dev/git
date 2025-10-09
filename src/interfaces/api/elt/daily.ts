@@ -13,7 +13,7 @@ export async function handlePost(req: Request) {
   const start = new Date(`${targetDay}T00:00:00.000Z`).toISOString();
   const end   = new Date(`${targetDay}T23:59:59.999Z`).toISOString();
 
-  const sb = sbAdmin;
+  const sb = sbAdmin();
 
   const [bg, meals, water, weight, bp, insulin] = await Promise.all([
     sb.from("glucose_logs").select("mgdl").gte("at", start).lte("at", end).eq("user_id", userId),

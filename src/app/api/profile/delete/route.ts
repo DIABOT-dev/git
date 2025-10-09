@@ -9,7 +9,7 @@ export async function DELETE(req: NextRequest) {
     // Xóa người dùng khỏi Supabase Auth.
     // Điều này sẽ tự động kích hoạt xóa hồ sơ trong bảng 'profiles'
     // nếu có ràng buộc khóa ngoại 'on delete cascade'.
-    const { data, error } = await supabaseAdmin.auth.admin.deleteUser(userId); // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin().auth.admin.deleteUser(userId); // Gọi supabaseAdmin như một hàm
 
     if (error) {
       console.error("Error deleting user:", error);

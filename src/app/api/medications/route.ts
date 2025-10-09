@@ -5,14 +5,14 @@ type Med = { id: string; name: string; dose?: string; note?: string };
 const meds = new Map<string, Med[]>(); // userId -> meds
 
 export async function GET() {
-  const supabase = getServerClient;
+  const supabase = getServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const uid = user?.id ?? 'demo';
   return NextResponse.json({ ok: true, data: meds.get(uid) ?? [] });
 }
 
 export async function POST(req: Request) {
-  const supabase = getServerClient;
+  const supabase = getServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const uid = user?.id ?? 'demo';
   const b = await req.json();

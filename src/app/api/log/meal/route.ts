@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert vào meal_logs với Supabase Admin
-    const { data, error } = await supabaseAdmin // Gọi supabaseAdmin như một hàm
+    const { data, error } = await supabaseAdmin() // Gọi supabaseAdmin như một hàm
       .from("meal_logs")
       .insert({
         user_id: userId,

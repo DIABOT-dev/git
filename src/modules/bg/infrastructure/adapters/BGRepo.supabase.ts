@@ -1,3 +1,5 @@
+// src/modules/bg/infrastructure/adapters/BGRepo.supabase.ts
+import { supabase } from "@/lib/supabase/client";
 import type { BGLogDTO, SaveResult } from "../../domain/types";
 import type { BGRepo } from "../../application/ports/BGRepo";
 
@@ -27,43 +29,33 @@ function getDevUserId(): string | null {
 // tag mapping for legacy schema (glucose_logs.tag)
 const TAG_MAP: Record<BGLogDTO["context"], string> = {
   before: "before_meal",
-  after2h: "after_meal",
+  after2h: "after_meal", 
   random: "random",
 };
 
 export class BGRepoSupabase implements BGRepo {
   async save(dto: BGLogDTO): Promise<SaveResult> {
+    // Resolve profile/user id; replace with real auth session in production
     const user_id = dto.profile_id ?? getDevUserId();
     if (!user_id) {
       return { ok: false, status: 401, error: "Missing user session (user_id). Vui lòng đăng nhập lại." };
     }
 
-    const value_mgdl = dto.unit === "mmol/L" ? mmolToMgdl(dto.value) : Math.round(dto.value);
-    const tag = TAG_MAP[dto.context];
+    // Map to your actual DB schema (legacy example with value_mgdl, tag, taken_at)
+    const payload = {
+      user_id,
+      value_mgdl: dto.unit === "mmol/L" ? mmolToMgdl(dto.value) : Math.round(dto.value),
+      tag: TAG_MAP[dto.context],        // enum glucose_tag in your DB
+      taken_at: dto.taken_at,           // ISO string
+    };
 
-    try {
-      // Call API instead of direct DB access (client-safe)
-      const response = await fetch('/api/log/bg', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id,
-          value_mgdl,
-          tag,
-          taken_at: dto.taken_at
-        })
-      });
+    const { data, error, status } = await supabase
+      .from("glucose_logs")             // change if your table name differs
+      .insert(payload)
+      .select("id")
+      .single();
 
-      if (!response.ok) {
-        const error = await response.json();
-        return { ok: false, status: response.status, error: error.error || 'API error' };
-      }
-
-      const result = await response.json();
-      return { ok: true, status: 201, id: result.id };
-    } catch (error: any) {
-      console.error('[BGRepo] Save error:', error);
-      return { ok: false, status: 500, error: error.message || 'Network error' };
-    }
+    if (error) return { ok: false, status: status || 500, error: error.message };
+    return { ok: true, status: 201, id: (data as any)?.id };
   }
 }

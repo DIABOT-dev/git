@@ -4,8 +4,8 @@ import { SaveMealLogDTO } from "../domain/types";
 
 export class MealRepo {
   async insert(dto: SaveMealLogDTO, userId: string) {
-    // Sử dụng supabaseAdmin để có client Supabase với service role key, bỏ qua RLS
-    const supabase = supabaseAdmin; // Gọi supabaseAdmin như một hàm
+    // Sử dụng supabaseAdmin() để có client Supabase với service role key, bỏ qua RLS
+    const supabase = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
     const { data, error } = await supabase.from("meal_logs").insert({
       user_id: userId, // Sử dụng user_id được truyền vào
       meal_type: dto.meal_type,

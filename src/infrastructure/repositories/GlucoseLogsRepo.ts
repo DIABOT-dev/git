@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const startTime = startOfDay(new Date(targetDay)).toISOString();
   const endTime = endOfDay(new Date(targetDay)).toISOString();
 
-  const sb = supabaseAdmin; // Gọi supabaseAdmin như một hàm
+  const sb = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
 
   try {
     // Aggregate glucose data
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 // Export class for imports
 export class GlucoseLogsRepo {
   async listByRange(userId: string, startTime: string, endTime: string) {
-    const sb = supabaseAdmin; // Gọi supabaseAdmin như một hàm
+    const sb = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
     const { data, error } = await sb
       .from("glucose_logs")
       .select("*")
@@ -104,7 +104,7 @@ export class GlucoseLogsRepo {
   }
 
   async create(log: any) {
-    const sb = supabaseAdmin; // Gọi supabaseAdmin như một hàm
+    const sb = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
     const { data, error } = await sb
       .from("glucose_logs")
       .insert(log)

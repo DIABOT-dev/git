@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const taken = parsed.data.taken_at ?? now;
 
-    const sb = supabaseAdmin; // Gọi supabaseAdmin như một hàm
+    const sb = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
     const { data, error } = await sb
       .from("water_logs")
       .insert({

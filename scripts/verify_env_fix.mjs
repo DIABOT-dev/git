@@ -32,7 +32,7 @@ for (const endpoint of logEndpoints) {
     const content = readFileSync(endpoint, 'utf-8');
     const hasCorrectImport = content.includes("from '@/lib/supabase/admin'") ||
                              content.includes('from "@/lib/supabase/admin"');
-    const usesFunction = content.includes('supabaseAdmin');
+    const usesFunction = content.includes('supabaseAdmin()');
 
     if (hasCorrectImport && usesFunction) {
       console.log(`   ✅ ${endpoint.split('/').pop()}`);

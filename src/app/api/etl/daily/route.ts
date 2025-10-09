@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const endTime = endOfDay(new Date(targetDay)).toISOString();
 
     // Khởi tạo client trong handler (tránh side-effect top-level)
-    const sb = supabaseAdmin; // Gọi supabaseAdmin như một hàm
+    const sb = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
 
     // ---------- Aggregate glucose ----------
     let glucoseProcessed = 0;

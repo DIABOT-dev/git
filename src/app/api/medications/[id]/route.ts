@@ -5,7 +5,7 @@ const meds = (global as any).__meds__ ?? new Map<string, any[]>();
 (global as any).__meds__ = meds;
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const supabase = getServerClient;
+  const supabase = getServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const uid = user?.id ?? 'demo';
   const list = meds.get(uid) ?? [];
@@ -18,7 +18,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const supabase = getServerClient;
+  const supabase = getServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const uid = user?.id ?? 'demo';
   const list = meds.get(uid) ?? [];

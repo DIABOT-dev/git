@@ -44,7 +44,7 @@ export class FeatureStoreRepo {
         setTimeout(() => reject(new Error('Timeout')), 150)
       );
 
-      const queryPromise = supabaseAdmin
+      const queryPromise = supabaseAdmin()
         .from('user_daily_features')
         .select('*')
         .eq('user_id', userId)
@@ -83,7 +83,7 @@ export class FeatureStoreRepo {
         setTimeout(() => reject(new Error('Timeout')), 150)
       );
 
-      let query = supabaseAdmin
+      let query = supabaseAdmin()
         .from('user_meal_patterns')
         .select('meal_type, dish, portion_avg, freq_7d') // Explicit columns
         .eq('user_id', userId)
@@ -110,7 +110,7 @@ export class FeatureStoreRepo {
    */
   async getHabitScores(userId: string): Promise<HabitScore[]> {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin()
         .from('user_habit_scores')
         .select('*')
         .eq('user_id', userId)
@@ -133,7 +133,7 @@ export class FeatureStoreRepo {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - daysBack);
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin()
         .from('meal_logs')
         .select('carbs_g, protein_g, fat_g, meal_type, cooking_method, taken_at')
         .eq('user_id', userId)

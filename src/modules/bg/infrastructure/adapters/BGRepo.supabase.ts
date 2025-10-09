@@ -1,5 +1,4 @@
-// src/modules/bg/infrastructure/adapters/BGRepo.supabase.ts
-import { supabase } from "@/lib/supabase/client";
+import { query } from "@/lib/db";
 import type { BGLogDTO, SaveResult } from "../../domain/types";
 import type { BGRepo } from "../../application/ports/BGRepo";
 
@@ -35,27 +34,26 @@ const TAG_MAP: Record<BGLogDTO["context"], string> = {
 
 export class BGRepoSupabase implements BGRepo {
   async save(dto: BGLogDTO): Promise<SaveResult> {
-    // Resolve profile/user id; replace with real auth session in production
     const user_id = dto.profile_id ?? getDevUserId();
     if (!user_id) {
       return { ok: false, status: 401, error: "Missing user session (user_id). Vui lòng đăng nhập lại." };
     }
 
-    // Map to your actual DB schema (legacy example with value_mgdl, tag, taken_at)
-    const payload = {
-      user_id,
-      value_mgdl: dto.unit === "mmol/L" ? mmolToMgdl(dto.value) : Math.round(dto.value),
-      tag: TAG_MAP[dto.context],        // enum glucose_tag in your DB
-      taken_at: dto.taken_at,           // ISO string
-    };
+    const value_mgdl = dto.unit === "mmol/L" ? mmolToMgdl(dto.value) : Math.round(dto.value);
+    const tag = TAG_MAP[dto.context];
 
-    const { data, error, status } = await supabase
-      .from("glucose_logs")             // change if your table name differs
-      .insert(payload)
-      .select("id")
-      .single();
+    try {
+      const result = await query(
+        `INSERT INTO glucose_logs (user_id, value_mgdl, tag, taken_at, created_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         RETURNING id`,
+        [user_id, value_mgdl, tag, dto.taken_at]
+      );
 
-    if (error) return { ok: false, status: status || 500, error: error.message };
-    return { ok: true, status: 201, id: (data as any)?.id };
+      return { ok: true, status: 201, id: result.rows[0]?.id };
+    } catch (error: any) {
+      console.error('[BGRepo] Save error:', error);
+      return { ok: false, status: 500, error: error.message || 'Database error' };
+    }
   }
 }

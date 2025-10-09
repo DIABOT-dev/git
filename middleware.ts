@@ -48,8 +48,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const hasAccess =
-    req.cookies.has('sb-access-token') || req.cookies.has('sb:token')
+  const sessionCookie = process.env.SESSION_COOKIE_NAME || 'diabot_session'
+  const hasAccess = req.cookies.has(sessionCookie)
 
   if (!hasAccess) {
     const url = req.nextUrl.clone()

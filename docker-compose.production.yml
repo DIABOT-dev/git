@@ -1,8 +1,9 @@
 version: "3.9"
 
 # DIABOT Production Docker Compose Configuration
-# Environment: Viettel Cloud VPS Staging
+# Environment: Viettel Cloud - DE-BOLT Complete
 # Version: 0.9.0
+# Database: diabot-postgres (external)
 # Port: 80 (mapped from container port 3000)
 
 services:
@@ -15,11 +16,11 @@ services:
     ports:
       - "80:3000"
     env_file:
-      - .env.production
+      - .env.viettel
     environment:
-      # Override settings for production deployment
       - NODE_ENV=production
       - PORT=3000
+      - DATABASE_URL=postgresql://diabot:diabot@diabot-postgres:5432/diabot?sslmode=disable
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/healthz"]
@@ -33,7 +34,7 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - diabot-network
+      - diabot_net
     deploy:
       resources:
         limits:
@@ -44,9 +45,9 @@ services:
           memory: 512M
 
 networks:
-  diabot-network:
-    driver: bridge
-    name: diabot-staging-network
+  diabot_net:
+    external: true
+    name: diabot_net
 
 # Volume configuration (if needed in future)
 # volumes:

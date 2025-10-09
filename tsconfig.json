@@ -26,9 +26,6 @@
         "./src/interfaces/ui/styles/*"
       ]
     },
-    "types": [
-      "vitest/globals"
-    ],
     "lib": [
       "ES2017",
       "dom",

@@ -1,13 +1,13 @@
+/* eslint-disable no-console */
 // scripts/db_seed_demo.ts
 import { supabaseAdmin } from "@/lib/db";
-import { v4 as uuidv4 } from 'uuid';
 import { nowIso } from '@/lib/time';
 
 const DEMO_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'a9d5518d-ee4c-49ca-8b20-5a2d4aaa16a2';
 
 async function seedDemoData() {
   console.log("🚀 Seeding demo data for user:", DEMO_USER_ID);
-  const sb = supabaseAdmin;
+  const sb = supabaseAdmin();
 
   // Clear existing demo data for this user (optional, but good for repeatable seeds)
   await sb.from('glucose_logs').delete().eq('user_id', DEMO_USER_ID);

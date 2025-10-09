@@ -3,6 +3,16 @@ import { requireAuth } from '@/lib/auth/getUserId';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 export const dynamic = 'force-dynamic';
 
+type MetricRow = {
+  day: string;
+  avg_bg_mgdl: number | null;
+  count_bg: number | null;
+  total_water_ml: number | null;
+  weight_kg: number | null;
+  avg_systolic: number | null;
+  avg_diastolic: number | null;
+};
+
 function toCSV(rows: Record<string, any>[]) {
   if (!rows.length) return '';
   const headers = Object.keys(rows[0]);
@@ -36,7 +46,7 @@ export async function GET(req: NextRequest) {
     }
 
     // If no metrics, fetch raw glucose logs as fallback
-    let rows = metricsData || [];
+    let rows: MetricRow[] = metricsData ?? [];
 
     if (!rows.length) {
       const { data: bgLogs, error: bgError } = await sb
@@ -48,25 +58,27 @@ export async function GET(req: NextRequest) {
         .order('taken_at', { ascending: true });
 
       if (!bgError && bgLogs) {
-        rows = bgLogs.map(log => ({
-          date: log.taken_at.slice(0, 10),
-          avg_bg_mgdl: log.value_mgdl,
+        rows = bgLogs.map((log) => ({
+          day: log.taken_at.slice(0, 10),
+          avg_bg_mgdl: log.value_mgdl ?? null,
           count_bg: 1,
           total_water_ml: 0,
           weight_kg: null,
+          avg_systolic: null,
+          avg_diastolic: null,
         }));
       }
     }
 
     // Format data for CSV
-    const csvRows = rows.map(r => ({
-      date: r.day || r.date || '',
-      avg_bg: r.avg_bg_mgdl || '',
-      bg_count: r.count_bg || '',
-      water_ml: r.total_water_ml || '',
-      weight_kg: r.weight_kg || '',
-      systolic: r.avg_systolic || '',
-      diastolic: r.avg_diastolic || '',
+    const csvRows = rows.map((r) => ({
+      date: r.day ?? '',
+      avg_bg: r.avg_bg_mgdl ?? '',
+      bg_count: r.count_bg ?? '',
+      water_ml: r.total_water_ml ?? '',
+      weight_kg: r.weight_kg ?? '',
+      systolic: r.avg_systolic ?? '',
+      diastolic: r.avg_diastolic ?? '',
     }));
 
     if (!csvRows.length) {

@@ -14,7 +14,7 @@ export async function handlePost(req: Request) {
   const body = await req.json();
   const input = BPInput.parse(body);
 
-  const sb = supabaseAdmin;
+  const sb = supabaseAdmin();
   const { data, error } = await sb
     .from("bp_logs")
     .insert({

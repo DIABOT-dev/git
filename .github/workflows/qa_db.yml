@@ -1,0 +1,41 @@
+name: QA DB & API (Postgres)
+on:
+  push:
+    branches: [ feat/ci-qa-verification, main ]
+  workflow_dispatch: {}
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: diabot
+          POSTGRES_USER: diabot
+          POSTGRES_PASSWORD: diabot
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U diabot -d diabot"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Export DB URL
+        run: echo "DIABOT_DB_URL=postgresql://diabot:diabot@localhost:5432/diabot" >> $GITHUB_ENV
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Make QA script executable
+        run: chmod +x scripts/qa_stack.sh
+
+      - name: Run QA stack
+        run: bash scripts/qa_stack.sh
+
+      - name: Upload QA_MVP.md
+        uses: actions/upload-artifact@v4
+        with: { name: QA_MVP, path: QA_MVP.md }

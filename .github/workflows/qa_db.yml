@@ -1,12 +1,14 @@
 name: QA DB & API (Postgres)
+
 on:
   push:
-    branches: [ main, feat/ci-qa-verification ]
+    branches: [ main ]         # muốn chạy cả nhánh khác thì thêm vào đây
   workflow_dispatch: {}
 
 jobs:
   qa:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:14
@@ -14,22 +16,38 @@ jobs:
           POSTGRES_DB: diabot
           POSTGRES_USER: diabot
           POSTGRES_PASSWORD: diabot
-        ports: ['5432:5432']
+        ports: [ "5432:5432" ]
         options: >-
           --health-cmd "pg_isready -U diabot -d diabot"
-          --health-interval 5s --health-timeout 5s --health-retries 30
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+
+    env:
+      DIABOT_DB_URL: postgresql://diabot:diabot@localhost:5432/diabot
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with:
+          node-version: "20"
 
-      - name: Export DB URL
-        run: echo "DIABOT_DB_URL=postgresql://diabot:diabot@localhost:5432/diabot" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: |
+          npm install
 
-      - name: Install deps
-        run: npm install
+      # Vá nhanh: đảm bảo có Next/React để start app, không cần sửa package.json
+      - name: Ensure Next.js is available
+        run: |
+          npm i --no-audit --no-fund next@14.2.7 react@18.3.1 react-dom@18.3.1
 
+      - name: Build app
+        run: npx next build
+
+      - name: Start app (background)
+        run: npx next start -p 3000 &
+      
       - name: Make QA script executable
         run: chmod +x scripts/qa_stack.sh
 
@@ -38,4 +56,6 @@ jobs:
 
       - name: Upload QA_MVP.md
         uses: actions/upload-artifact@v4
-        with: { name: QA_MVP, path: QA_MVP.md }
+        with:
+          name: QA_MVP
+          path: QA_MVP.md

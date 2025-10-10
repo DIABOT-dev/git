@@ -28,7 +28,7 @@ jobs:
         run: echo "DIABOT_DB_URL=postgresql://diabot:diabot@localhost:5432/diabot" >> $GITHUB_ENV
 
       - name: Install deps
-        run: npm ci
+        run: npm install
 
       - name: Make QA script executable
         run: chmod +x scripts/qa_stack.sh

@@ -1,6 +1,16 @@
 // src/modules/meal/ui/components/MealCard.tsx
 "use client";
-export default function MealCard({ title, tip, onChoose }:{ title:string; tip?:string; onChoose:()=>void }){
+
+import type { Key } from 'react'
+
+type MealCardProps = {
+  key?: Key
+  title: string
+  tip?: string
+  onChoose: () => void | Promise<void>
+}
+
+export default function MealCard({ title, tip, onChoose }: MealCardProps){
   return (
     <div className="border rounded p-3 flex items-center justify-between">
       <div>

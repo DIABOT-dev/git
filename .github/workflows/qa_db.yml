@@ -1,7 +1,7 @@
 name: QA DB & API (Postgres)
 on:
   push:
-    branches: [ feat/ci-qa-verification, main ]
+    branches: [ main, feat/ci-qa-verification ]
   workflow_dispatch: {}
 
 jobs:

@@ -1,0 +1,7 @@
+**/*
+!src/app/api/log/**
+!src/app/api/chart/**
+!src/app/api/qa/**
+!src/app/admin/db-inspect/**
+!src/lib/**
+!types/**

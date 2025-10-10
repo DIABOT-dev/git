@@ -1,43 +1,101 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { supabaseAdmin } from "@/lib/supabase/admin"; // Đã sửa import
-import { requireAuth } from "@/lib/auth/getUserId";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+import { query } from "@/lib/db_client";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 export const revalidate = 0;
 
-const bodySchema = z.object({
-  value_mgdl: z.number().int().min(20).max(800),
-  tag: z.enum(["fasting","before_meal","after_meal","bedtime","random"]).optional(),
-  taken_at: z.string().datetime().optional(), // ISO
+const BodySchema = z.object({
+  profile_id: z.string().uuid(),
+  value: z.number(),
+  unit: z.string().min(1),
+  ts: z.string().datetime({ offset: true }),
+  context: z.string().optional(),
+  note: z.string().optional()
 });
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
+  let payload: unknown;
+
   try {
-    const userId = await requireAuth(req);
+    payload = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "invalid_body" },
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
 
-    const json = await req.json().catch(() => null);
-    const parse = bodySchema.safeParse(json);
-    if (!parse.success) return NextResponse.json({ error: parse.error.flatten() }, { status: 400 });
+  const parsed = BodySchema.safeParse(payload);
 
-    const { value_mgdl, tag, taken_at } = parse.data;
-    const taken = taken_at ? new Date(taken_at).toISOString() : new Date().toISOString();
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "invalid_body" },
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
 
-    const sb = supabaseAdmin(); // Gọi supabaseAdmin như một hàm
-    const { data, error } = await sb
-      .from("glucose_logs")
-      .insert({ user_id: userId, value_mgdl, tag, taken_at: taken })
-      .select()
-      .single();
+  const { profile_id, value, unit, ts, context, note } = parsed.data;
+  const timestamp = new Date(ts);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true, data }, { status: 201 });
-  } catch (error: any) {
-    if (error.message === "Authentication required") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (Number.isNaN(timestamp.getTime())) {
+    return NextResponse.json(
+      { error: "invalid_body" },
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+
+  try {
+    const result = await query<{ id: string }>(
+      `
+        INSERT INTO bg_logs (id, profile_id, value, unit, context, ts, note)
+        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)
+        RETURNING id;
+      `,
+      [profile_id, value, unit, context ?? null, timestamp.toISOString(), note ?? null]
+    );
+
+    const id = result.rows[0]?.id;
+
+    if (!id) {
+      console.error("[api/log/bg] missing id from insert result", result.rows);
+
+      return NextResponse.json(
+        { error: "db_error" },
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
     }
-    console.error("Error in /api/log/bg:", error);
-    return NextResponse.json({ error: error.message || "unknown" }, { status: 500 });
+
+    return NextResponse.json(
+      { id },
+      {
+        status: 201,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  } catch (err) {
+    console.error("[api/log/bg]", err);
+
+    return NextResponse.json(
+      { error: "db_error" },
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   }
 }

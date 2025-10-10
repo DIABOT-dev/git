@@ -120,7 +120,7 @@ export default function Settings() {
 
 /* ---- Small components ---- */
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
     <section>
       <p className="px-1 pb-2 text-[13.5px] font-semibold text-slate-700">{title}</p>

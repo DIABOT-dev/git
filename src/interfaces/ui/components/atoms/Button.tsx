@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'ghost' | 'danger' | 'secondary';
   size?: 'sm' | 'md' | 'lg';
-  children: ReactNode;
+  children?: ReactNode;
   'data-testid'?: string;
 }
 

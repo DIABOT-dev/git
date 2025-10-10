@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CardProps {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   'data-testid'?: string;
 }

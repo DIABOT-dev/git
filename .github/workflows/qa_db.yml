@@ -2,7 +2,7 @@ name: QA DB & API (Postgres)
 
 on:
   push:
-    branches: [ main ]         # muốn chạy cả nhánh khác thì thêm vào đây
+    branches: [ main ]          # thêm nhánh khác nếu muốn
   workflow_dispatch: {}
 
 jobs:
@@ -19,9 +19,7 @@ jobs:
         ports: [ "5432:5432" ]
         options: >-
           --health-cmd "pg_isready -U diabot -d diabot"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 30
+          --health-interval 5s --health-timeout 5s --health-retries 30
 
     env:
       DIABOT_DB_URL: postgresql://diabot:diabot@localhost:5432/diabot
@@ -33,21 +31,31 @@ jobs:
         with:
           node-version: "20"
 
+      # ⛔️ Fix cứng registry công khai để tránh .npmrc nội bộ (9092)
+      - name: Force public npm registry
+        run: |
+          npm config set registry https://registry.npmjs.org/
+          npm config delete proxy || true
+          npm config delete https-proxy || true
+          npm config set strict-ssl true
+          echo "NPM registry -> $(npm config get registry)"
+
       - name: Install dependencies
         run: |
-          npm install
+          npm install --no-audit --no-fund --registry=https://registry.npmjs.org/
 
-      # Vá nhanh: đảm bảo có Next/React để start app, không cần sửa package.json
+      # Đảm bảo có Next/React dù project để ở devDependencies
       - name: Ensure Next.js is available
         run: |
-          npm i --no-audit --no-fund next@14.2.7 react@18.3.1 react-dom@18.3.1
+          npx --yes --registry https://registry.npmjs.org/ next --version \
+          || npm i --no-audit --no-fund --registry=https://registry.npmjs.org/ next@14.2.7 react@18.3.1 react-dom@18.3.1
 
       - name: Build app
-        run: npx next build
+        run: npx --yes --registry https://registry.npmjs.org/ next build
 
       - name: Start app (background)
-        run: npx next start -p 3000 &
-      
+        run: npx --yes --registry https://registry.npmjs.org/ next start -p 3000 &
+
       - name: Make QA script executable
         run: chmod +x scripts/qa_stack.sh
 

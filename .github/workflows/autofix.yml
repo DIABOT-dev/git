@@ -2,31 +2,10 @@ name: Autofix #auth (base setup)
 
 on:
   workflow_dispatch:
-    inputs:
-      simulate_result:
-        description: "PASS or FAIL for #auth test simulation"
-        required: true
-        default: "PASS"
 
 jobs:
-  autofix-auth:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Run #auth simulation
-        run: |
-          echo "🔧 Running #auth simulation..."
-          echo "Result: ${{ inputs.simulate_result }}"
-          if [ "${{ inputs.simulate_result }}" = "FAIL" ]; then
-            echo "❌ Simulation failed"
-            exit 1
-          else
-            echo "✅ Simulation passed"
-          fi
+      - name: Hello from #auth
+        run: echo "✅ Workflow chạy thành công!"

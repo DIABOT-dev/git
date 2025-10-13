@@ -1,101 +1,58 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { query } from '@/lib/db_client'
 
-import { query } from "@/lib/db_client";
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+export const revalidate = 0
 
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
-export const revalidate = 0;
+const profileIdSchema = z.string().uuid()
 
-const BodySchema = z.object({
-  profile_id: z.string().uuid(),
-  value: z.number(),
-  unit: z.string().min(1),
-  ts: z.string().datetime({ offset: true }),
-  context: z.string().optional(),
-  note: z.string().optional()
-});
-
-export async function POST(request: NextRequest) {
-  let payload: unknown;
-
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "invalid_body" },
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
+export async function GET(request: NextRequest) {
+  // 1) Header APP_KEY
+  const expected = process.env.APP_KEY
+  if (expected && request.headers.get('x-app-key') !== expected) {
+    return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 })
   }
 
-  const parsed = BodySchema.safeParse(payload);
+  // 2) Read & validate profile_id
+  const pidRaw = request.nextUrl.searchParams.get('profile_id') ?? ''
+  const pidParsed = profileIdSchema.safeParse(pidRaw)
+  if (!pidParsed.success) {
+    return NextResponse.json({ error: 'invalid_profile_id' }, { status: 400, headers: { 'Content-Type': 'application/json' } })
+  }
+  const pid = pidParsed.data
 
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid_body" },
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
+  // 3) Allowlist MVP
+  const allow = new Set(
+    (process.env.PROFILE_ID_ALLOWLIST || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean),
+  )
+  if (allow.size === 0) allow.add('9c913921-9fc6-41cc-a45f-ea05a0f34f2a')
+  if (!allow.has(pid)) {
+    return NextResponse.json({ ok: false, error: 'forbidden_profile' }, { status: 403 })
   }
 
-  const { profile_id, value, unit, ts, context, note } = parsed.data;
-  const timestamp = new Date(ts);
+  // 4) Query 7 ngày
+  const result = await query<{ day: Date; avg_bg: number | null }>(
+    `
+    SELECT
+      date_trunc('day', ts)::date AS day,
+      AVG(value)::float AS avg_bg
+    FROM bg_logs
+    WHERE profile_id = $1 AND ts >= now() - interval '7 days'
+    GROUP BY 1
+    ORDER BY 1 ASC
+    `,
+    [pid],
+  )
 
-  if (Number.isNaN(timestamp.getTime())) {
-    return NextResponse.json(
-      { error: "invalid_body" },
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
-  }
+  const days = result.rows.map(row => ({
+    day: row.day instanceof Date ? row.day.toISOString().slice(0, 10) : String(row.day),
+    avg_bg: row.avg_bg == null ? null : Number(row.avg_bg),
+  }))
 
-  try {
-    const result = await query<{ id: string }>(
-      `
-        INSERT INTO bg_logs (id, profile_id, value, unit, context, ts, note)
-        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)
-        RETURNING id;
-      `,
-      [profile_id, value, unit, context ?? null, timestamp.toISOString(), note ?? null]
-    );
-
-    const id = result.rows[0]?.id;
-
-    if (!id) {
-      console.error("[api/log/bg] missing id from insert result", result.rows);
-
-      return NextResponse.json(
-        { error: "db_error" },
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" }
-        }
-      );
-    }
-
-    return NextResponse.json(
-      { id },
-      {
-        status: 201,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
-  } catch (err) {
-    console.error("[api/log/bg]", err);
-
-    return NextResponse.json(
-      { error: "db_error" },
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
-  }
+  return NextResponse.json({ ok: true, days })
 }

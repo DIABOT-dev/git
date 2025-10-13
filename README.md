@@ -1,170 +1,106 @@
-# DIABOT – bước-một scaffold (Next.js 14.2 + Supabase)
+# DIABOT — Clean Scaffold (Next.js 14.2 + Postgres + Docker)
 
 ## 🔒 CHECKPOINT (DO NOT TOUCH)
 
-**Commit:** V4 UI Phase – DEV PASS checkpoint  
-**Tag:** v4-ui-pass-2025-09-12  
-**Branch:** release/v4-ui-pass  
-**Status:** ✅ PROVISIONAL PASS - Ready for UI Development
+**Commit baseline:** v5-mvp-base-2025-10-13  
+**Branch:** `main`  
+**Status:** ✅ Infra Stable | Functional Freeze Pending (#auth)
 
-### 🚨 Emergency Rollback (When tests fail or UI breaks):
+---
 
-```bash
-git fetch --all --tags
-git checkout -f release/v4-ui-pass
-git reset --hard v4-ui-pass-2025-09-12 && git clean -fd && npm ci
-```
-
-**⚠️ CRITICAL RULES:**
-- **NEVER** force-push to `release/v4-ui-pass`
-- All new changes go to `feat/*` branches
-- Merge only via PR with passing e2e tests
-- This checkpoint is the "golden state" - treat as read-only
+### 🧩 Summary
+DIABOT là trợ lý AI giúp người tiểu đường quản lý lối sống:  
+ghi log 6 chỉ số (BG, nước, cân nặng, huyết áp, insulin, bữa ăn),  
+xem biểu đồ 7 / 30 ngày, xuất PDF/CSV và chat AI demo.
 
 ---
 
 ## 🚀 Quick Start
 
-1) `cp .env.example .env.local` và cập nhật thông số cần thiết.
-2) `npm i`
-3) `npm run dev`
-4) Test API:
-   - `POST /api/log/water`
-   - `POST /api/log/meal`
-   - `POST /api/log/bg`
-   - `POST /api/log/insulin`
-5) ETL (stub): `npm run etl:daily`, `npm run etl:weekly`
+```bash
+# 1️⃣ Clone
+git clone https://github.com/<org>/<repo>.git diabot
+cd diabot
 
-Lưu ý: sửa tên bảng/columns tại lớp `src/infra/repositories/*` để khớp schema Postgres (Viettel) hiện có.
+# 2️⃣ ENV
+cp .env.example .env.local
+# Điền thông tin Postgres, Viettel S3, API Key, v.v.
 
-## 🗃️ Postgres (Viettel)
+# 3️⃣ Docker run
+docker compose up -d --build
 
-Service Postgres nội bộ chạy cùng Docker Compose:
+# 4️⃣ Smoke test
+curl -i http://localhost:3000/api/qa/selftest   # expect 200
+🧠 Architecture (V5)
+pgsql
+Sao chép mã
+src/
+ ├─ domain/          → entities, usecases
+ ├─ application/     → services, DTO, validators
+ ├─ infrastructure/  → db (Postgres), schedulers, storage adapter
+ └─ interfaces/      → api routes, ui/pages, hooks, components
+Domain không import infra.
+
+API → Application → Domain chuẩn Clean Architecture.
+
+RLS (Postgres) bắt buộc; không dùng Supabase runtime.
+
+Feature flags điều khiển AI, chart, rewards, v.v.
+
+🧾 QA Smoke Checklist (V5)
+Endpoint	Expect	Note
+/api/qa/selftest	200	Service ready
+/auth/login	200	Form render
+/	302 → /login (nếu chưa login)	✅ fix auth-core
+/api/log/bg	201	Zod validated
+/api/chart/7d	200	OLAP-lite demo fallback OK
+
+🧱 Functional Freeze Plan
+Phase	Target	Tag
+Infra Freeze	Docker + DB + CI/CD ổn định	v0.9.1-freeze-infra
+Auth Fix	Signup/Login usable + redirect đúng	v0.9.2-freeze-functional
+AI Ready	Chat demo kết nối OK	v0.9.3-freeze-ai
+
+🛠 Critical Rules
+❌ Không commit Supabase runtime hay keys.
+
+🔒 .env.example chỉ chứa placeholder, không secret.
+
+✅ Mọi PR phải qua CI và QA Smoke pass.
+
+🧩 Không force-push lên main.
+
+🚫 Không touch branch v4-ui-pass.
+
+🧑‍💻 Team Notes
+Tech Lead: Trần Quang Tùng
+
+QA Lead: Đặng Tuấn Anh
+
+Product Owner: Trần Hoàng Nam
+
+📜 License
+© 2025 CÔNG TY CỔ PHẦN DIABOT — All rights reserved.
+
+yaml
+Sao chép mã
+
+---
+
+## ⚙️ Lệnh cho Codex khởi động lại (dán vào prompt Codex)
 
 ```bash
-docker compose up -d db
-```
+#boltprompt
+# TASK: Reset README & bắt đầu sửa auth-core theo đặc tả V5
 
-Áp dụng lần lượt các migration khi đã có nội dung:
-
-```bash
-docker compose exec db psql -U postgres -d diabot -f migrations/000_init.sql
-docker compose exec db psql -U postgres -d diabot -f migrations/010_rls.sql
-docker compose exec db psql -U postgres -d diabot -f migrations/020_seed_minimal.sql
-```
-
-## 🧪 QA Testing
-
-### Internal QA Endpoints
-
-```bash
-# Self-test (environment, connections, health)
-curl -s http://localhost:3000/api/qa/selftest | jq
-
-# AI evaluation of system health
-curl -s -X POST http://localhost:3000/api/qa/evaluate | jq
-```
-
-**Expected Output:**
-```json
-{
-  "meta": {
-    "id": "uuid",
-    "commit": "local-dev",
-    "branch": "local",
-    "startedAt": "2025-01-27T...",
-    "finishedAt": "2025-01-27T..."
-  },
-  "stats": {
-    "total": 3,
-    "passed": 3,
-    "failed": 0,
-    "warned": 0
-  },
-  "items": [...]
-}
-```
-
-### Internal QA Endpoints
-
-```bash
-# Self-test (environment, connections, health)
-curl -s http://localhost:3000/api/qa/selftest | jq
-
-# AI evaluation of system health
-curl -s -X POST http://localhost:3000/api/qa/evaluate | jq
-```
-
-**Expected Output:**
-```json
-{
-  "meta": {
-    "id": "uuid",
-    "commit": "local-dev",
-    "branch": "local",
-    "startedAt": "2025-01-27T...",
-    "finishedAt": "2025-01-27T..."
-  },
-  "stats": {
-    "total": 3,
-    "passed": 3,
-    "failed": 0,
-    "warned": 0
-  },
-  "items": [...]
-}
-```
-
-## 🎛️ Feature Flags
-
-Unified feature flag system in `config/feature-flags.ts`. Configure via environment variables in `.env.local`:
-
-```bash
-# Client-side flags (require rebuild when changed)
-NEXT_PUBLIC_AI_AGENT=demo
-NEXT_PUBLIC_REWARDS=false
-NEXT_PUBLIC_BG_SYNC=false
-NEXT_PUBLIC_CHART_USE_DEMO=true
-
-# Server-side flags (no rebuild required)
-MEAL_MOCK_MODE=true
-REMINDER_MOCK_MODE=true
-AI_CACHE_ENABLED=true
-AI_BUDGET_ENABLED=false
-
-# Safety & Control
-NEXT_PUBLIC_KILL_SWITCH=false
-AUTH_DEV_MODE=true
-```
-
-Use `getFeatureFlag('FLAG_NAME')` or `isFeatureEnabled('FLAG_NAME')` to check flags in code.
-
-## 📊 Testing Status
-
-- ✅ **Environment:** Node.js v20.14.2, Next.js ^14.2.32
-- ✅ **Unauth Protection:** All 8 endpoints return 401
-- ✅ **Auth Logic:** DEV mode headers processed correctly  
-- ✅ **API Architecture:** All endpoints accessible and functional
-- ✅ **Database Schema:** Verified với Postgres (Viettel)
-- ✅ **Profile Management:** User profile exists and accessible
-
-**Recommendation:** ✅ **PROCEED TO UI DEVELOPMENT PHASE**
-
-<!-- Test commitlint setup -->
-
-# Moat Extended – DIABOT
-
-## Mục tiêu
-Các moat nâng cao, tách riêng, không trùng file với Moat Core.
-
-## Danh sách
-1. privacy.ts → enforcePrivacy(), auditLog()
-2. trends.ts → analyzeTrends(ctx)
-3. habit.ts → checkDailyHabits(), rewardCoins()
-4. mealSuggest.ts → suggestMeal(ctx)
-5. guardrails_ext.ts → validateExtended(ctx)
-
-## Cách dùng
-- Import từng moat vào gateway/route.ts khi cần.
-- Không ghi đè Moat Core.
-- Có thể bật/tắt bằng feature_flag trong DB sau này.
+1️⃣ Pull bản mới nhất từ main.
+2️⃣ Ghi đè file git/README.md bằng bản V5 (đã cung cấp).
+3️⃣ Tạo branch mới:
+   git checkout -b fix/auth-core
+4️⃣ Giữ nguyên mọi logic khác; chỉ xử lý:
+   - Redirect / → /login nếu chưa có session
+   - Sửa POST /auth/signup trả lỗi rõ hoặc tạo user thành công
+5️⃣ Sau khi test pass:
+   - Commit "fix(auth-core): functional freeze ready"
+   - Push & tạo PR → main
+6️⃣ Báo cáo kết quả QA qua tag #auth và #report.

@@ -11,5 +11,6 @@ export function middleware(req: NextRequest) {
   return NextResponse.next()
 }
 
+
 // Chỉ chặn các API MVP
 export const config = { matcher: ['/api/log/:path*', '/api/chart/:path*'] }

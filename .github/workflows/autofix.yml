@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
-      - name: Hello from #auth
-        run: echo "✅ Workflow chạy thành công!"
+      - name: Print hello
+        run: echo "✅ Workflow chạy được rồi!"

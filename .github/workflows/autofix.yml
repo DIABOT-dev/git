@@ -2,10 +2,24 @@ name: Autofix #auth (base setup)
 
 on:
   workflow_dispatch:
+    inputs:
+      target_ref:
+        description: "Branch to check out"
+        required: true
+        default: "main"
+      simulate_result:
+        description: "PASS or FAIL"
+        required: true
+        default: "PASS"
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_ref }}
       - name: Print hello
-        run: echo "✅ Workflow chạy được rồi!"
+        run: |
+          echo "✅ Workflow chạy được rồi trên ref: ${{ inputs.target_ref }}"
+          [ "${{ inputs.simulate_result }}" = "FAIL" ] && exit 1 || true

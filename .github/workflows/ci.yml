@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+- name: Check Next.js install
+  run: npx next --version
+  
       - name: Lint
         run: npm run lint
 

@@ -9,14 +9,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
     env:
       VPS_HOST: ${{ secrets.VPS_HOST }}
-      VPS_USER: ${{ secrets.VPS_USER }}            # nên là 'ubuntu'
-      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}      # đúng tên secret
-      CAMP_PATH: /home/ubuntu/diabot_camp          # đúng đường dẫn theo user
-      DIABOT_URL: https://camp.diabot.top
-      # IMAGE: ghcr.io/DIABOT-dev/git:${{ github.sha }}  # nếu cần dùng thì tham chiếu trong compose
+      VPS_USER: ${{ secrets.VPS_USER }}          # ubuntu
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      CAMP_PATH: /home/ubuntu/diabot_camp
+      IMAGE: ghcr.io/DIABOT-dev/git:${{ github.sha }}  # chỉnh theo repo image của bạn
 
     steps:
       - uses: actions/checkout@v4
@@ -31,39 +29,42 @@ jobs:
             set -e
             echo "🚀 Starting Deploy Camp"
 
-            # Ensure workdir exists
-            if [ ! -d "${CAMP_PATH}" ]; then
-              mkdir -p "${CAMP_PATH}"
-            fi
+            # Ensure workdir
+            mkdir -p "${CAMP_PATH}"
             cd "${CAMP_PATH}"
 
-            # Ensure compose file exists (chỉnh tên nếu bạn dùng file khác)
+            # If compose missing, write a minimal one
             if [ ! -f docker-compose.yml ]; then
-              echo "❌ Missing docker-compose.yml at ${CAMP_PATH}"
-              exit 1
+              cat > docker-compose.yml <<'YAML'
+              services:
+                app:
+                  image: ${IMAGE}
+                  container_name: diabot-app
+                  restart: unless-stopped
+                  env_file:
+                    - .env           # tạo file này trước hoặc xoá dòng nếu chưa cần
+                  ports:
+                    - "3000:3000"
+              YAML
             fi
 
-            echo "📦 Pulling latest images..."
-            docker compose pull || true
+            echo "📦 Pulling & restarting..."
+            IMAGE=${IMAGE} docker compose pull || true
+            IMAGE=${IMAGE} docker compose up -d || true
 
-            echo "🔁 Restarting services..."
-            docker compose up -d || true
-
-            echo "⏳ Waiting for services to start..."
+            echo "⏳ Waiting..."
             sleep 10
 
-            echo "🩺 Health check (domain)..."
-            if ! curl -fsSL https://camp.diabot.top/api/qa/selftest >/dev/null; then
-              echo "⚠️ Domain check failed, trying IP fallback..."
-              curl -fsSL http://$HOSTNAME:3000/api/qa/selftest >/dev/null || exit 1
-            fi
+            echo "🩺 Health check via IP:3000"
+            curl -fsSL "http://${VPS_HOST}:3000/api/qa/selftest" >/dev/null || (echo "❌ Health check failed" && exit 1)
 
-            echo "✅ Deploy Camp completed successfully!"
+            echo "✅ Deploy Camp OK"
 
-      - name: Smoke test APIs (external)
+      - name: Smoke test APIs (external by IP)
         run: |
           set -e
-          echo "Testing endpoints at ${DIABOT_URL} ..."
-          curl -s -o /dev/null -w "selftest=%{http_code}\n" ${DIABOT_URL}/api/qa/selftest
-          curl -s -o /dev/null -w "chart7d=%{http_code}\n" ${DIABOT_URL}/api/chart/7d || true
-          curl -s -o /dev/null -w "profile=%{http_code}\n" ${DIABOT_URL}/api/profile || true
+          BASE="http://${{ env.VPS_HOST }}:3000"
+          echo "Testing ${BASE}"
+          curl -s -o /dev/null -w "selftest=%{http_code}\n"  "$BASE/api/qa/selftest"
+          curl -s -o /dev/null -w "chart7d=%{http_code}\n"   "$BASE/api/chart/7d" || true
+          curl -s -o /dev/null -w "profile=%{http_code}\n"   "$BASE/api/profile"  || true

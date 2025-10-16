@@ -30,19 +30,21 @@ jobs:
           key: ${{ env.VPS_SSH_KEY }}
           script: |
              set -e
-             cd /home/ubuntu/diabot_camp
+             echo "🚀 Starting Deploy Camp"
+             cd /home/ubuntu/diabot_camp || mkdir -p /home/ubuntu/diabot_camp && cd /home/ubuntu/diabot_camp
 
-             echo "📦 Pull latest image and restart..."
+
+             echo "📦 Pulling latest image..."
              docker compose pull || true
              docker compose up -d || true
 
-             echo "⏳ Waiting for container to stabilize..."
+             echo "⏳ Waiting for services to start..."
              sleep 10
 
-             echo "🩺 Running health check..."
+             echo "🩺 Checking service health..."
              curl -fsSL https://camp.diabot.top/api/qa/selftest || (echo "❌ Health check failed" && exit 1)
 
-             echo "✅ Deploy success!"
+             echo "✅ Deploy Camp completed successfully!"
 
       # 2) Smoke test & log kết quả
       - name: Smoke test APIs

@@ -12,7 +12,7 @@ jobs:
 
     env:
       VPS_HOST: ${{ secrets.VPS_HOST }}
-      VPS_USER: ${{ secrets.VPS_USER }}          # ubuntu
+      VPS_USER: ${{ secrets.VPS_USER }}          # nên là ubuntu
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       IMAGE: ghcr.io/DIABOT-dev/git:${{ github.sha }}
 
@@ -27,30 +27,25 @@ jobs:
           key: ${{ env.VPS_SSH_KEY }}
           script: |
             set -e
-
-            # --- KHAI BÁO BIẾN TRONG SSH SESSION ---
             CAMP_PATH="/home/ubuntu/diabot_camp"
             IMAGE="${{ env.IMAGE }}"
             HEALTH_IP="${{ env.VPS_HOST }}"
 
             echo "🚀 Starting Deploy Camp at ${CAMP_PATH}"
-
-            # Ensure workdir
             mkdir -p "${CAMP_PATH}"
             cd "${CAMP_PATH}"
 
-            # Tạo compose tối thiểu nếu chưa có
+            # Nếu chưa có file docker-compose.yml thì tự tạo mẫu
             if [ ! -f docker-compose.yml ]; then
-              cat > docker-compose.yml <<'YAML'
-              services:
-                app:
-                  image: REPLACE_IMAGE
-                  container_name: diabot-app
-                  restart: unless-stopped
-                  ports:
-                    - "3000:3000"
-              YAML
-              sed -i "s|REPLACE_IMAGE|${IMAGE}|g" docker-compose.yml
+cat > docker-compose.yml <<EOF
+services:
+  app:
+    image: ${IMAGE}
+    container_name: diabot-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+EOF
             fi
 
             echo "📦 Pull & restart"
@@ -61,8 +56,7 @@ jobs:
             sleep 10
 
             echo "🩺 Health check by IP:3000"
-            curl -fsSL "http://${HEALTH_IP}:3000/api/qa/selftest" >/dev/null \
-              || (echo "❌ Health check failed" && exit 1)
+            curl -fsSL "http://${HEALTH_IP}:3000/api/qa/selftest" >/dev/null || (echo "❌ Health check failed" && exit 1)
 
             echo "✅ Deploy Camp OK"
 

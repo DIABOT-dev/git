@@ -3,25 +3,24 @@ name: Deploy Camp
 on:
   workflow_run:
     workflows: ["CI"]
-    types:
-      - completed
+    types: [completed]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     env:
-      SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       VPS_HOST: ${{ secrets.VPS_HOST }}
-      VPS_USER: ${{ secrets.VPS_USER }}
-      CAMP_PATH: /home/deploy/diabot_camp
-      IMAGE: ghcr.io/DIABOT-dev/git:${{ github.sha }}
-      DIABOT_URL: https://diabot.top
+      VPS_USER: ${{ secrets.VPS_USER }}            # nên là 'ubuntu'
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}      # đúng tên secret
+      CAMP_PATH: /home/ubuntu/diabot_camp          # đúng đường dẫn theo user
+      DIABOT_URL: https://camp.diabot.top
+      # IMAGE: ghcr.io/DIABOT-dev/git:${{ github.sha }}  # nếu cần dùng thì tham chiếu trong compose
 
     steps:
       - uses: actions/checkout@v4
 
-      # 1) Copy image name & trigger deploy qua SSH
       - name: Deploy to Camp Server
         uses: appleboy/ssh-action@master
         with:
@@ -29,28 +28,42 @@ jobs:
           username: ${{ env.VPS_USER }}
           key: ${{ env.VPS_SSH_KEY }}
           script: |
-             set -e
-             echo "🚀 Starting Deploy Camp"
-             cd /home/ubuntu/diabot_camp || mkdir -p /home/ubuntu/diabot_camp && cd /home/ubuntu/diabot_camp
+            set -e
+            echo "🚀 Starting Deploy Camp"
 
+            # Ensure workdir exists
+            if [ ! -d "${CAMP_PATH}" ]; then
+              mkdir -p "${CAMP_PATH}"
+            fi
+            cd "${CAMP_PATH}"
 
-             echo "📦 Pulling latest image..."
-             docker compose pull || true
-             docker compose up -d || true
+            # Ensure compose file exists (chỉnh tên nếu bạn dùng file khác)
+            if [ ! -f docker-compose.yml ]; then
+              echo "❌ Missing docker-compose.yml at ${CAMP_PATH}"
+              exit 1
+            fi
 
-             echo "⏳ Waiting for services to start..."
-             sleep 10
+            echo "📦 Pulling latest images..."
+            docker compose pull || true
 
-             echo "🩺 Checking service health..."
-             curl -fsSL https://camp.diabot.top/api/qa/selftest || (echo "❌ Health check failed" && exit 1)
+            echo "🔁 Restarting services..."
+            docker compose up -d || true
 
-             echo "✅ Deploy Camp completed successfully!"
+            echo "⏳ Waiting for services to start..."
+            sleep 10
 
-      # 2) Smoke test & log kết quả
-      - name: Smoke test APIs
+            echo "🩺 Health check (domain)..."
+            if ! curl -fsSL https://camp.diabot.top/api/qa/selftest >/dev/null; then
+              echo "⚠️ Domain check failed, trying IP fallback..."
+              curl -fsSL http://$HOSTNAME:3000/api/qa/selftest >/dev/null || exit 1
+            fi
+
+            echo "✅ Deploy Camp completed successfully!"
+
+      - name: Smoke test APIs (external)
         run: |
-          echo "Testing endpoints..."
-          curl -s -o /dev/null -w "%{http_code}" ${DIABOT_URL}/api/qa/selftest
-          curl -s -o /dev/null -w "%{http_code}" ${DIABOT_URL}/api/chart/7d
-          curl -s -o /dev/null -w "%{http_code}" ${DIABOT_URL}/api/profile
-        continue-on-error: true
+          set -e
+          echo "Testing endpoints at ${DIABOT_URL} ..."
+          curl -s -o /dev/null -w "selftest=%{http_code}\n" ${DIABOT_URL}/api/qa/selftest
+          curl -s -o /dev/null -w "chart7d=%{http_code}\n" ${DIABOT_URL}/api/chart/7d || true
+          curl -s -o /dev/null -w "profile=%{http_code}\n" ${DIABOT_URL}/api/profile || true

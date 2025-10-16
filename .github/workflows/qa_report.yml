@@ -1,0 +1,74 @@
+name: QA Report (Camp)
+
+on:
+  workflow_run:
+    workflows: ["Deploy Camp"]
+    types: [completed]
+
+jobs:
+  qa:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    env:
+      BASE: https://camp.diabot.top
+
+    steps:
+      - name: Prepare
+        run: |
+          echo "BASE=${BASE}"
+          mkdir -p qa && cd qa
+          cat > urls.txt <<EOF
+          /api/qa/selftest
+          /api/chart/7d
+          /api/profile
+          EOF
+
+      - name: Probe endpoints & build report
+        id: probe
+        shell: bash
+        run: |
+          cd qa
+          pass=1
+          ts=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          {
+            echo "# 🧪 DIABOT – Camp QA Report"
+            echo "_${ts}_"
+            echo
+            echo "| Endpoint | Status | Code | Latency |"
+            echo "|---------:|:------:|-----:|--------:|"
+          } > report.md
+
+          while read -r path; do
+            [ -z "$path" ] && continue
+            code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE}${path}")
+            time=$(curl -s -o /dev/null -w "%{time_total}s" "${BASE}${path}")
+            ok="✅"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then ok="❌"; pass=0; fi
+            printf "| \`%s\` | %s | %s | %s |\n" "$path" "$ok" "$code" "$time" >> report.md
+          done < urls.txt
+
+          echo >> report.md
+          if [ $pass -eq 1 ]; then
+            echo "## ✅ QA Passed" >> report.md
+          else
+            echo "## ❌ QA Failed" >> report.md
+          fi
+
+          echo "pass=$pass" >> $GITHUB_OUTPUT
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: camp-qa-report
+          path: qa/report.md
+
+      - name: Add report to job summary
+        run: cat qa/report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Gate on result (fail if any endpoint failed)
+        if: ${{ steps.probe.outputs.pass != '1' }}
+        run: |
+          echo "One or more endpoints failed. See QA Report above."
+          exit 1

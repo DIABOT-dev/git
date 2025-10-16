@@ -15,8 +15,8 @@ jobs:
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER }}
       CAMP_PATH: /home/deploy/diabot_camp
-      IMAGE: ghcr.io/<org>/<repo>:${{ github.sha }}
-      DIABOT_URL: https://camp.diabot.top
+      IMAGE: ghcr.io/DIABOT-dev/git:${{ github.sha }}
+      DIABOT_URL: https://diabot.top
 
     steps:
       - uses: actions/checkout@v4

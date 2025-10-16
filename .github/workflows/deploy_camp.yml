@@ -35,6 +35,7 @@ jobs:
             sleep 10
             curl -fsSL ${DIABOT_URL}/api/qa/selftest || exit 1
 
+
       # 2) Smoke test & log kết quả
       - name: Smoke test APIs
         run: |

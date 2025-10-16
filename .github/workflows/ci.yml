@@ -1,6 +1,18 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    # Map secrets -> env (tránh dùng secrets trong if:)
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -9,22 +21,21 @@ jobs:
           node-version: 18
           cache: 'npm'
 
-      # 1) Chẩn đoán để nhìn rõ nguồn gốc cấu hình
+      # 1) Chẩn đoán cấu hình npm
       - name: Diagnose npm config
         run: |
-          echo "NPM_CONFIG_USERCONFIG=${NPM_CONFIG_USERCONFIG}"
+          echo "NPM_CONFIG_USERCONFIG=${NPM_CONFIG_USERCONFIG:-}"
           npm config get registry || true
           npm config list || true
-          [ -f .npmrc ] && echo "--- .npmrc ---" && cat .npmrc || true
-          [ -f ~/.npmrc ] && echo "--- ~/.npmrc ---" && cat ~/.npmrc || true
+          [ -f .npmrc ] && echo "--- .npmrc (repo) ---" && cat .npmrc || true
+          [ -f ~/.npmrc ] && echo "--- ~/.npmrc (home) ---" && cat ~/.npmrc || true
 
-      # 2) Trung hòa các file .npmrc và proxy “lạ”
-      - name: Neutralize rogue npmrc / proxy
+      # 2) Trung hoà .npmrc và proxy lạ, ép registry chuẩn
+      - name: Neutralize npmrc / proxy and set registry
         shell: bash
         run: |
           rm -f .npmrc || true
           rm -f ~/.npmrc || true
-          # Nếu runner có biến NPM_CONFIG_USERCONFIG, ép file đó về registry chuẩn
           if [ -n "${NPM_CONFIG_USERCONFIG:-}" ]; then
             echo "registry=https://registry.npmjs.org/" > "$NPM_CONFIG_USERCONFIG"
           fi
@@ -34,17 +45,20 @@ jobs:
           npm config set strict-ssl true
           npm cache verify || true
 
-      # 3) (Tuỳ chọn) Auth npm nếu cần kéo gói private
+      # 3) Auth npm CHỈ KHI có token (tránh if dùng secrets)
       - name: Authenticate to npm (optional)
-        if: ${{ secrets.NPM_TOKEN != '' }}
+        shell: bash
         run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> "${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          if [ -n "${NPM_TOKEN:-}" ]; then
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> "${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+            echo "NPM auth configured."
+          else
+            echo "No NPM_TOKEN provided; skipping npm auth."
+          fi
 
       # 4) Cài đặt & kiểm tra Next
-      - name: Install deps
+      - name: Install dependencies
         run: npm ci
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Check Next.js version
         run: npx --yes next@latest --version

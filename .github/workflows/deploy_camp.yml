@@ -55,15 +55,15 @@ jobs:
             echo "⏳ Wait..."
             sleep 10
 
-            echo "🩺 Health check by IP:3000"
-            curl -fsSL "http://${HEALTH_IP}:3000/api/qa/selftest" >/dev/null || (echo "❌ Health check failed" && exit 1)
+            echo "🩺 Health check (domain)"
+            curl -fsSL "https://camp.diabot.top/api/qa/selftest" >/dev/null || (echo "❌ Health check failed" && exit 1)
 
             echo "✅ Deploy Camp OK"
 
       - name: Smoke test APIs (external by IP)
         run: |
           set -e
-          BASE="http://${{ env.VPS_HOST }}:3000"
+          BASE="https://camp.diabot.top"
           echo "Testing ${BASE}"
           curl -s -o /dev/null -w "selftest=%{http_code}\n"  "$BASE/api/qa/selftest"
           curl -s -o /dev/null -w "chart7d=%{http_code}\n"   "$BASE/api/chart/7d" || true

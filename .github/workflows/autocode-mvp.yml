@@ -22,7 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -36,7 +37,7 @@ jobs:
           git checkout -b "$BR"
           echo "BRANCH=$BR" >> $GITHUB_OUTPUT
 
-      # === (1) Thêm API /api/version cho cả Pages & App Router ===
+      # (1) Thêm API /api/version cho cả Pages & App Router
       - name: Ensure folders
         run: |
           mkdir -p src/hooks src/components
@@ -59,75 +60,4 @@ jobs:
           cat > app/api/version/route.ts <<'TS'
           export async function GET() {
             const version = process.env.NEXT_PUBLIC_APP_VERSION || "dev";
-            const commit = process.env.NEXT_PUBLIC_GIT_COMMIT || "local";
-            const built_at = process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString();
-            return new Response(JSON.stringify({ version, commit, built_at }), {
-              status: 200,
-              headers: { "content-type": "application/json" }
-            });
-          }
-          TS
-
-      # === (2) Hook + Banner phiên bản ===
-      - name: Add hook useVersion
-        run: |
-          cat > src/hooks/useVersion.ts <<'TS'
-          import { useEffect, useState } from "react";
-          type Ver = { version: string; commit: string; built_at: string };
-          export function useVersion() {
-            const [data, setData] = useState<Ver | null>(null);
-            const [loading, setLoading] = useState(true);
-            useEffect(() => {
-              let mounted = true;
-              (async () => {
-                try {
-                  const r = await fetch("/api/version", { cache: "no-store" });
-                  if (!r.ok) throw new Error("version api failed");
-                  const j = await r.json();
-                  if (mounted) setData(j);
-                } catch {
-                  try {
-                    const r = await fetch("/version.json", { cache: "no-store" });
-                    if (r.ok) { const j = await r.json(); if (mounted) setData(j); }
-                  } catch {}
-                } finally { if (mounted) setLoading(false); }
-              })();
-              return () => { mounted = false; };
-            }, []);
-            return { data, loading };
-          }
-          TS
-
-      - name: Add BannerVersion component
-        run: |
-          cat > src/components/BannerVersion.tsx <<'TSX'
-          "use client";
-          import React from "react";
-          import { useVersion } from "../hooks/useVersion";
-          export default function BannerVersion() {
-            const { data, loading } = useVersion();
-            if (loading || !data) return null;
-            return (
-              <div className="w-full text-xs md:text-sm bg-slate-900 text-white px-3 py-2 flex items-center justify-between">
-                <div><strong>DIABOT</strong> • {data.version}<span className="opacity-70"> — {data.commit}</span></div>
-                <time className="opacity-70">{new Date(data.built_at).toLocaleString()}</time>
-              </div>
-            );
-          }
-          TSX
-
-      # === (3) Bump version + CHANGELOG ===
-      - name: Add bump script
-        run: |
-          mkdir -p tools
-          cat > tools/bump_version.js <<'JS'
-          const fs = require('fs');
-          const type = process.env.BUMP || 'patch';
-          const pkg = JSON.parse(fs.readFileSync('package.json','utf8'));
-          const [MA,MI,PA] = pkg.version.split('.').map(n=>parseInt(n,10));
-          let [a,b,c]=[MA,MI,PA];
-          if(type==='major'){a++;b=0;c=0;} else if(type==='minor'){b++;c=0;} else {c++;}
-          pkg.version = [a,b,c].join('.');
-          fs.writeFileSync('package.json', JSON.stringify(pkg,null,2)+'\n');
-          console.log(pkg.version);
-
+            const commit = process.env.N

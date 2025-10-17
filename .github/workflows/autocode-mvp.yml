@@ -1,6 +1,6 @@
 name: Autocode: MVP pack
 
-on:
+ on:
   workflow_dispatch:
     inputs:
       target_branch:
@@ -12,11 +12,11 @@ on:
         required: true
         default: 'patch'
 
-permissions:
+ permissions:
   contents: write
   pull-requests: write
 
-jobs:
+ jobs:
   scaffold:
     runs-on: ubuntu-latest
     steps:
